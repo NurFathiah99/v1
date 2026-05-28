@@ -244,7 +244,7 @@ setInterval(() => {
 const dailyMessages = [
   'You are the highlight of every single day 🌸',
   'Hey cyg, just a reminder — you\'re doing amazing 💕',
-  'Aaaa baby dah makan belum? Jangan skip okay! 🍜',
+  'Aaaa cyg dah makan belum? Jangan skip mkn okay! protein! 🍜',
   'You\'re so cute even when you don\'t notice it 🥺',
   'Today is a great day because you\'re in it ✨',
   'Cyg, jangan stress sangat. Breathe. I got you 🫶',
@@ -252,7 +252,7 @@ const dailyMessages = [
   'Miss you always, even bila tengah buat kerja 🌷',
   'You\'re my comfort even from far away 🌸',
   'Keep going cyg, you\'re stronger than you think 💪🏻',
-  'Nanti bila jumpa, nak hug lama sikit 🥺💗',
+  'Nanti kite  cari tiramisu ye 🥺💗',
   'You deserve all the nice things, tau tak? 🌷',
 ];
 
