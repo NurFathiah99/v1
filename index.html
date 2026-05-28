@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#f9a8c9" />
+  <meta name="description" content="A cozy little corner made with love — just for you, cyg 🌸" />
+  <title>CutiePie 🌸 — For You, Cyg</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Dancing+Script:wght@500;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <!-- Floating background particles -->
+  <div id="particles" aria-hidden="true"></div>
+  <div id="petals" aria-hidden="true"></div>
+  <div id="loveNotes" aria-hidden="true"></div>
+
+  <!-- Background video -->
+  <div id="bgVideoWrap" aria-hidden="true">
+    <video id="bgVideo" playsinline autoplay muted loop>
+      <source src="vid1.mp4" type="video/mp4">
+    </video>
+    <div class="bg-overlay"></div>
+  </div>
+
+  <!-- Mood toast popup -->
+  <div id="moodToast" class="mood-toast" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Loading screen -->
+  <div id="loadingScreen" class="loading-screen">
+    <div class="loading-inner">
+      <div class="loading-heart">💖</div>
+      <p id="loadingText" class="loading-text">Loading something cute for you...</p>
+    </div>
+  </div>
+
+  <!-- Main app -->
+  <div id="app" class="app" style="opacity:0">
+
+    <!-- ── TOP BAR ─────────────────────────────────── -->
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="topbar-brand">
+          <span class="brand-icon">🌸</span>
+          <span class="brand-name">CutiePie</span>
+        </div>
+        <button id="soundToggle" class="icon-btn" aria-label="Toggle sound" title="Toggle sound">🔇</button>
+      </div>
+    </header>
+
+    <!-- ── PAGES ─────────────────────────────────────── -->
+    <main class="pages" id="pages">
+
+      <!-- ════ PAGE: HOME ════ -->
+      <section class="page active" id="pageHome" data-page="home">
+
+        <!-- Hero -->
+        <div class="hero">
+          <div class="hero-video-wrap">
+            <video id="mainVid" playsinline autoplay muted loop>
+              <source src="vid1.mp4" type="video/mp4">
+            </video>
+            <div class="hero-veil"></div>
+          </div>
+          <div class="hero-content">
+            <h1 class="hero-title">For You, Cyg 🌸</h1>
+            <p class="hero-sub">You make every moment sweeter just by existing ✨</p>
+            <button id="loveBtn" class="love-btn">
+              <span class="love-btn-heart">💖</span>
+              <span>I Love You</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Daily sweet message -->
+        <div class="section-card daily-card fade-reveal">
+          <div class="daily-label">💌 Daily Sweet Message</div>
+          <p id="dailyMsg" class="daily-msg"></p>
+          <button id="newMsgBtn" class="chip-btn">New message 🌷</button>
+        </div>
+
+        <!-- Greeting card (morning / night) -->
+        <div id="greetCard" class="section-card greet-card fade-reveal">
+          <div class="greet-emoji" id="greetEmoji">🌙</div>
+          <h2 id="greetTitle" class="greet-title">Good Night, Cyg</h2>
+          <p id="greetMsg" class="greet-msg"></p>
+        </div>
+
+        <!-- Mood buttons -->
+        <div class="section-card fade-reveal" id="moodSection">
+          <h2 class="section-title">How are you feeling? 🤍</h2>
+          <p class="section-sub">Tap your vibe, I wanna know 🥺</p>
+          <div class="mood-grid" id="moodGrid">
+            <button class="mood-btn" data-mood="happy">😊<span>Happy</span></button>
+            <button class="mood-btn" data-mood="sad">😔<span>Sad</span></button>
+            <button class="mood-btn" data-mood="tired">😪<span>Tired</span></button>
+            <button class="mood-btn" data-mood="stress">😣<span>Stress</span></button>
+            <button class="mood-btn" data-mood="excited">✨<span>Excited</span></button>
+            <button class="mood-btn" data-mood="missyou">🥺<span>Miss You</span></button>
+            <button class="mood-btn" data-mood="hungry">🍜<span>Hungry</span></button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ════ PAGE: MEMORIES ════ -->
+      <section class="page" id="pageMemories" data-page="memories">
+
+        <div class="page-header fade-reveal">
+          <h1 class="page-title">Our Little Memories 📸</h1>
+          <p class="page-sub">Every picture tells our story, cyg 🌸</p>
+        </div>
+
+        <!-- Gallery -->
+        <div class="section-card fade-reveal" style="overflow:hidden;padding:14px 0 14px;">
+          <div class="gallery-wrap">
+            <div class="gallery-track" id="galleryTrack">
+              <figure class="photo"><img src="pic/pic1.jpg" alt="Memory 1" loading="lazy">
+                <div class="photo-overlay"><span class="photo-heart">💖</span></div>
+              </figure>
+              <figure class="photo"><img src="pic/pic2.jpg" alt="Memory 2" loading="lazy">
+                <div class="photo-overlay"><span class="photo-heart">💖</span></div>
+              </figure>
+              <figure class="photo"><img src="pic/pic3.jpg" alt="Memory 3" loading="lazy">
+                <div class="photo-overlay"><span class="photo-heart">💖</span></div>
+              </figure>
+              <figure class="photo"><img src="pic/pic4.jpg" alt="Memory 4" loading="lazy">
+                <div class="photo-overlay"><span class="photo-heart">💖</span></div>
+              </figure>
+              <figure class="photo"><img src="pic/pic5.jpg" alt="Memory 5" loading="lazy">
+                <div class="photo-overlay"><span class="photo-heart">💖</span></div>
+              </figure>
+            </div>
+          </div>
+          <p class="gallery-hint">✨ Swipe to browse our moments</p>
+        </div>
+
+        <!-- Fave food section -->
+        <div class="section-card fade-reveal">
+          <h2 class="section-title">🍜 Cyg's Faves</h2>
+          <p class="section-sub">Because I remember every little thing about you 🥰</p>
+          <div class="fave-grid">
+            <div class="fave-item">
+              <div class="fave-icon">🍜</div>
+              <div class="fave-label">Kueyteow Kungfu</div>
+              <div class="fave-note">Her comfort food 🥺</div>
+            </div>
+            <div class="fave-item">
+              <div class="fave-icon">🌶️</div>
+              <div class="fave-label">Sambal Kicap</div>
+              <div class="fave-note">Johor girl energy 🤌</div>
+            </div>
+            <div class="fave-item">
+              <div class="fave-icon">🌸</div>
+              <div class="fave-label">BB kot HAHA</div>
+              <div class="fave-note">Obviously 💅</div>
+            </div>
+            <div class="fave-item">
+              <div class="fave-icon">😪</div>
+              <div class="fave-label">Tidur Lama</div>
+              <div class="fave-note">A whole hobby fr 😂</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Video memory -->
+        <div class="section-card fade-reveal" style="overflow:hidden;padding:14px;">
+          <h2 class="section-title">🎬 Our Little Video</h2>
+          <div class="vid-wrap">
+            <video id="memoryVid" playsinline autoplay muted loop>
+              <source src="vid1.mp4" type="video/mp4">
+            </video>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ════ PAGE: NOTES ════ -->
+      <section class="page" id="pageNotes" data-page="notes">
+
+        <div class="page-header fade-reveal">
+          <h1 class="page-title">Little Notes 💌</h1>
+          <p class="page-sub">Words from your bubu, straight from the heart 🫶</p>
+        </div>
+
+        <div class="notes-list" id="notesList">
+          <!-- notes rendered by JS -->
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- ── BOTTOM NAV ─────────────────────────────── -->
+    <nav class="bottom-nav" id="bottomNav" aria-label="Main navigation">
+      <button class="nav-btn active" data-page="home" aria-label="Home">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Home</span>
+      </button>
+      <button class="nav-btn" data-page="memories" aria-label="Memories">
+        <span class="nav-icon">📸</span>
+        <span class="nav-label">Memories</span>
+      </button>
+      <button class="nav-btn" data-page="notes" aria-label="Notes">
+        <span class="nav-icon">💌</span>
+        <span class="nav-label">Notes</span>
+      </button>
+    </nav>
+
+    <p id="audioHint" class="audio-hint">Tap 🔇 to start music 🎵</p>
+
+    <footer class="footer">
+      <small>Made with 💖 by Your Baby &nbsp;·&nbsp; Dari Johor dengan love 🌸</small>
+    </footer>
+
+  </div><!-- /app -->
+
+  <audio id="bgm" loop preload="auto">
+    <source src="bgm.mp3" type="audio/mpeg">
+  </audio>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
