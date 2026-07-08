@@ -1,44 +1,178 @@
 (() => {
 'use strict';
 
+/* ── CONFIGURATION (Edit with your credentials) ── */
+const FIREBASE_CONFIG = (window.ENV_CONFIG && window.ENV_CONFIG.firebase) ? window.ENV_CONFIG.firebase : {
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
+};
+
+const CLOUDINARY_CONFIG = (window.ENV_CONFIG && window.ENV_CONFIG.cloudinary) ? window.ENV_CONFIG.cloudinary : {
+  cloudName: "",
+  uploadPreset: ""
+};
+
+function getConfig() {
+  const localFbApiKey = localStorage.getItem('fb_apiKey');
+  const localFbProjId = localStorage.getItem('fb_projectId');
+  const localFbAppId = localStorage.getItem('fb_appId');
+  const localCloudName = localStorage.getItem('cl_cloudName');
+  const localUploadPreset = localStorage.getItem('cl_uploadPreset');
+
+  return {
+    firebase: {
+      apiKey: localFbApiKey || FIREBASE_CONFIG.apiKey,
+      projectId: localFbProjId || FIREBASE_CONFIG.projectId,
+      appId: localFbAppId || FIREBASE_CONFIG.appId,
+      authDomain: (localFbProjId || FIREBASE_CONFIG.projectId) ? `${localFbProjId || FIREBASE_CONFIG.projectId}.firebaseapp.com` : ""
+    },
+    cloudinary: {
+      cloudName: localCloudName || CLOUDINARY_CONFIG.cloudName,
+      uploadPreset: localUploadPreset || CLOUDINARY_CONFIG.uploadPreset
+    }
+  };
+}
+
+let db = null;
+const config = getConfig();
+
+if (window.firebase && config.firebase.projectId && config.firebase.projectId !== "YOUR_PROJECT_ID") {
+  try {
+    if (!firebase.apps.length) {
+      firebase.initializeApp(config.firebase);
+    }
+    db = firebase.firestore();
+  } catch (err) {
+    console.error("Firebase init error:", err);
+  }
+}
+
 /* ── Device detection ── */
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
 const isLowEnd = navigator.deviceMemory ? navigator.deviceMemory <= 2 : false;
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ── Loading screen with cute texts ── */
-const loadingTexts = [
-  'Preparing something cute for you... 🌸',
-  'Waking up the butterflies... 🦋',
-  'Sprinkling a little love... 💖',
-  'Loading cyg\'s fave things... 🍜',
-  'Gathering all the good vibes... ✨',
-  'One sec, bubu is almost ready... 🥺',
-  'Almost there, sayang! 💕',
-];
-
 const loadingScreen = document.getElementById('loadingScreen');
 const loadingTextEl = document.getElementById('loadingText');
 const appEl = document.getElementById('app');
 
-if (loadingTextEl) {
-  loadingTextEl.textContent = loadingTexts[Math.floor(Math.random() * loadingTexts.length)];
+function startLoadingExperience() {
+  const barFill = document.getElementById('loadingBarFill');
+  const percentEl = document.getElementById('loadingPercent');
+  const leftHeart = document.getElementById('leftHeart');
+  const rightHeart = document.getElementById('rightHeart');
+  const mergedHeart = document.getElementById('mergedHeart');
+  const loadingCursor = document.getElementById('loadingCursor');
+  const textContentEl = document.getElementById('loadingTextContent');
+  
+  if (!barFill || !percentEl) {
+    if (loadingScreen) loadingScreen.style.display = 'none';
+    if (appEl) appEl.style.opacity = '1';
+    return;
+  }
+
+  let progress = 0;
+  const targetText = "I LOVE YOU";
+  let lastTextLength = 0;
+
+  function updateTypingText(text) {
+    if (!textContentEl) return;
+    
+    if (text.length > lastTextLength) {
+      textContentEl.innerHTML = '';
+      for (let i = 0; i < text.length; i++) {
+        const span = document.createElement('span');
+        span.textContent = text[i];
+        if (i >= lastTextLength) {
+          span.className = 'pop-letter';
+        }
+        textContentEl.appendChild(span);
+      }
+      lastTextLength = text.length;
+    } else if (text.length < lastTextLength) {
+      textContentEl.innerHTML = '';
+      for (let i = 0; i < text.length; i++) {
+        const span = document.createElement('span');
+        span.textContent = text[i];
+        textContentEl.appendChild(span);
+      }
+      lastTextLength = text.length;
+    }
+  }
+
+  const interval = setInterval(() => {
+    progress += Math.floor(Math.random() * 3) + 2;
+    if (progress >= 100) {
+      progress = 100;
+      clearInterval(interval);
+      
+      barFill.style.width = '100%';
+      percentEl.textContent = '100%';
+      
+      updateTypingText("I LOVE YOU ❤️");
+      if (loadingCursor) loadingCursor.style.display = 'none';
+      if (loadingTextEl) loadingTextEl.classList.add('heartbeat');
+      
+      if (leftHeart && rightHeart && mergedHeart) {
+        leftHeart.style.transform = 'translateX(40px) scale(0.7)';
+        leftHeart.style.opacity = '0';
+        rightHeart.style.transform = 'translateX(-40px) scale(0.7)';
+        rightHeart.style.opacity = '0';
+        
+        setTimeout(() => {
+          leftHeart.style.display = 'none';
+          rightHeart.style.display = 'none';
+          mergedHeart.style.display = 'inline-block';
+          softBeep(720, 0.25, 0.05);
+          
+          setTimeout(() => {
+            if (loadingTextEl) {
+              loadingTextEl.classList.remove('heartbeat');
+            }
+            if (textContentEl) {
+              textContentEl.textContent = "Our love is connected.";
+            }
+            
+            setTimeout(() => {
+              if (loadingScreen) {
+                loadingScreen.classList.add('fade-out');
+                setTimeout(() => { loadingScreen.style.display = 'none'; }, 500);
+              }
+              if (appEl) {
+                appEl.style.transition = 'opacity 0.6s ease';
+                appEl.style.opacity = '1';
+              }
+            }, 1000);
+          }, 1200);
+        }, 500);
+      } else {
+        setTimeout(() => {
+          if (loadingScreen) {
+            loadingScreen.classList.add('fade-out');
+            setTimeout(() => { loadingScreen.style.display = 'none'; }, 500);
+          }
+          if (appEl) {
+            appEl.style.opacity = '1';
+          }
+        }, 1000);
+      }
+    } else {
+      barFill.style.width = progress + '%';
+      percentEl.textContent = progress + '%';
+      
+      const charIndex = Math.min(Math.floor(progress / 10), 9);
+      const subText = targetText.substring(0, charIndex + 1);
+      updateTypingText(subText);
+    }
+  }, 50);
 }
 
-function hideLoading() {
-  setTimeout(() => {
-    if (loadingScreen) {
-      loadingScreen.classList.add('fade-out');
-      setTimeout(() => { loadingScreen.style.display = 'none'; }, 500);
-    }
-    if (appEl) {
-      appEl.style.transition = 'opacity 0.6s ease';
-      appEl.style.opacity = '1';
-    }
-  }, 1100);
-}
-
-window.addEventListener('load', hideLoading);
+window.addEventListener('load', startLoadingExperience);
 
 /* ── DOM refs ── */
 const particles      = document.getElementById('particles');
@@ -105,10 +239,13 @@ window.addEventListener('pointerdown', resumeAudioCtx, { passive: true });
 let audioOn = false;
 
 function setAudioUI(on) {
-  soundToggle.textContent = on ? '🔊' : '🔇';
-  if (audioHint) audioHint.textContent = on
-    ? 'Music on 🎵 Tap to mute'
-    : 'Tap 🔇 to start music 🎵';
+  soundToggle.innerHTML = on ? '<i data-lucide="volume-2"></i>' : '<i data-lucide="volume-x"></i>';
+  if (audioHint) {
+    audioHint.innerHTML = on
+      ? 'Music on <i data-lucide="music" style="width: 14px; height: 14px;"></i> Tap to mute'
+      : 'Tap <i data-lucide="volume-x" style="width: 14px; height: 14px;"></i> to start music';
+  }
+  if (window.lucide) window.lucide.createIcons();
 }
 
 async function tryPlayAudio() {
@@ -256,12 +393,14 @@ const dailyMessages = [
   'You deserve all the nice things, tau tak? 🌷',
 ];
 
+let activeDailyMessages = [...dailyMessages];
+
 let lastMsgIdx = -1;
 function getRandomMsg() {
   let idx;
-  do { idx = Math.floor(Math.random() * dailyMessages.length); } while (idx === lastMsgIdx);
+  do { idx = Math.floor(Math.random() * activeDailyMessages.length); } while (idx === lastMsgIdx);
   lastMsgIdx = idx;
-  return dailyMessages[idx];
+  return activeDailyMessages[idx];
 }
 
 function showDailyMsg() {
@@ -280,26 +419,29 @@ if (newMsgBtn) newMsgBtn.addEventListener('click', () => { showDailyMsg(); softB
 /* ── Greeting card (morning / night) ── */
 function setGreeting() {
   const hour = new Date().getHours();
-  let emoji, title, msg;
+  let iconName, title, msg;
   if (hour >= 5 && hour < 12) {
-    emoji = '🌅'; title = 'Good Morning, Cyg! 🌸';
+    iconName = 'sunrise'; title = 'Good Morning, Cyg! 🌸';
     msg = 'Dah bangun? Jangan lupa breakfast ya sayang, nanti lapar 🥺 Start your day bright!';
   } else if (hour >= 12 && hour < 15) {
-    emoji = '☀️'; title = 'Good Afternoon, Cyg! 💛';
+    iconName = 'sun'; title = 'Good Afternoon, Cyg! 💛';
     msg = 'Tengah hari dah ni~ Jangan lupa makan tengah hari okay! Kueyteow ke? 🍜 hehe';
   } else if (hour >= 15 && hour < 18) {
-    emoji = '🌤️'; title = 'Hey Cyg 💕';
+    iconName = 'cloud-sun'; title = 'Hey Cyg 💕';
     msg = 'Petang dah. Rehat jap, minum air, tarik nafas sebentar 🌷 You\'re doing great today!';
   } else if (hour >= 18 && hour < 21) {
-    emoji = '🌇'; title = 'Good Evening, Cyg 🌷';
+    iconName = 'sunset'; title = 'Good Evening, Cyg 🌷';
     msg = 'Malam dah ni~ Dah makan malam belum? Jangan lupa makan tau, nanti baby risau 🥺💕';
   } else {
-    emoji = '🌙'; title = 'Good Night, Cyg 🌙';
+    iconName = 'moon'; title = 'Good Night, Cyg 🌙';
     msg = 'Dah lewat malam ni. Letak phone, rest sikit ya sayang. Sweet dreams always 💖 bubu loves you!';
   }
-  if (greetEmojiEl) greetEmojiEl.textContent = emoji;
+  if (greetEmojiEl) {
+    greetEmojiEl.innerHTML = `<i data-lucide="${iconName}" style="width: 32px; height: 32px;"></i>`;
+  }
   if (greetTitleEl) greetTitleEl.textContent = title;
   if (greetMsgEl)  greetMsgEl.textContent = msg;
+  if (window.lucide) window.lucide.createIcons();
 }
 setGreeting();
 
@@ -335,14 +477,23 @@ const moodData = {
   },
 };
 
-let moodToastTimer = null;
+let toastTimer = null;
 
-function showMoodToast(msg) {
+function showToast(msg, type = 'info') {
   if (!moodToast) return;
+  moodToast.classList.remove('success', 'error', 'info');
+  moodToast.classList.add(type);
   moodToast.textContent = msg;
   moodToast.classList.add('show');
-  if (moodToastTimer) clearTimeout(moodToastTimer);
-  moodToastTimer = setTimeout(() => moodToast.classList.remove('show'), 5500);
+  
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    moodToast.classList.remove('show');
+  }, type === 'error' ? 6000 : 4500);
+}
+
+function showMoodToast(msg) {
+  showToast(msg, 'info');
 }
 
 if (moodGrid) {
@@ -404,6 +555,42 @@ if (bottomNav) {
   });
 }
 
+// Memories Switcher Page Navigation Buttons
+if (window.viewAllMemoriesBtn) {
+  viewAllMemoriesBtn.addEventListener('click', () => {
+    switchPage('memories');
+  });
+}
+
+// Gallery Tab Switchers (Photos / Videos)
+if (window.memShowPhotosBtn && window.memShowVideosBtn) {
+  memShowPhotosBtn.addEventListener('click', () => {
+    currentMemoriesTab = 'photos';
+    memShowPhotosBtn.classList.add('active');
+    memShowVideosBtn.classList.remove('active');
+    renderMemories(activeMemoriesData);
+  });
+  
+  memShowVideosBtn.addEventListener('click', () => {
+    currentMemoriesTab = 'videos';
+    memShowVideosBtn.classList.add('active');
+    memShowPhotosBtn.classList.remove('active');
+    renderMemories(activeMemoriesData);
+  });
+}
+
+// Lightbox modal close triggers
+if (window.lightboxClose) {
+  lightboxClose.addEventListener('click', closeLightbox);
+}
+if (window.lightboxModal) {
+  lightboxModal.addEventListener('click', (e) => {
+    if (e.target === lightboxModal) {
+      closeLightbox();
+    }
+  });
+}
+
 /* ── Notes page content ── */
 const notesData = [
   {
@@ -433,10 +620,13 @@ const notesData = [
   },
 ];
 
-if (notesList) {
-  notesData.forEach((n, i) => {
+// Render Notes dynamically
+function renderNotes(data) {
+  if (!notesList) return;
+  notesList.innerHTML = "";
+  data.forEach((n, i) => {
     const card = document.createElement('div');
-    card.className = 'note-card fade-reveal';
+    card.className = 'note-card fade-reveal revealed';
     card.style.animationDelay = `${i * 0.07}s`;
     card.innerHTML = `
       <span class="note-tag">${n.tag}</span>
@@ -445,6 +635,815 @@ if (notesList) {
     `;
     notesList.appendChild(card);
   });
+}
+
+let currentMemoriesTab = 'photos';
+
+// Open Lightbox
+function openLightbox(item) {
+  const lightboxModal = document.getElementById('lightboxModal');
+  const lightboxImg = document.getElementById('lightboxImg');
+  const lightboxVid = document.getElementById('lightboxVid');
+  const lightboxCaption = document.getElementById('lightboxCaption');
+  if (!lightboxModal) return;
+
+  lightboxImg.style.display = 'none';
+  lightboxVid.style.display = 'none';
+  lightboxVid.src = '';
+  
+  if (item.type === 'video') {
+    lightboxVid.src = item.url;
+    lightboxVid.style.display = 'block';
+    lightboxVid.play().catch(() => {});
+  } else {
+    lightboxImg.src = item.url;
+    lightboxImg.style.display = 'block';
+  }
+
+  lightboxCaption.textContent = item.caption || '';
+  lightboxModal.classList.add('show');
+}
+
+// Close Lightbox
+function closeLightbox() {
+  const lightboxModal = document.getElementById('lightboxModal');
+  const lightboxVid = document.getElementById('lightboxVid');
+  if (lightboxModal) {
+    lightboxModal.classList.remove('show');
+  }
+  if (lightboxVid) {
+    lightboxVid.pause();
+    lightboxVid.src = '';
+  }
+}
+
+// Render Homepage Previews (latest 5-6)
+function renderHomePreviews(data) {
+  const grid = document.getElementById('homeMemoriesPreviewGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  
+  // Show latest 6 items
+  const previews = data.slice(0, 6);
+  previews.forEach(item => {
+    const cell = document.createElement('div');
+    cell.className = 'preview-cell';
+    
+    let mediaHtml = '';
+    if (item.type === 'video') {
+      mediaHtml = `
+        <video class="preview-media-element" playsinline autoplay muted loop src="${item.url}"></video>
+        <span class="preview-type-badge"><i data-lucide="clapperboard" style="width: 12px; height: 12px; stroke: #fff;"></i></span>
+      `;
+    } else {
+      mediaHtml = `
+        <img class="preview-media-element" src="${item.url}" alt="${item.caption || 'Preview'}" loading="lazy">
+      `;
+    }
+    
+    const uploaderHtml = item.uploadedBy ? `<span class="uploader-tag mini">by ${item.uploadedBy}</span>` : '';
+    cell.innerHTML = `
+      <div class="preview-media-wrap">
+        ${uploaderHtml}
+        ${mediaHtml}
+      </div>
+    `;
+    
+    cell.addEventListener('click', () => {
+      openLightbox(item);
+    });
+    
+    grid.appendChild(cell);
+  });
+  if (window.lucide) window.lucide.createIcons();
+}
+
+// Render memories page dynamically (Grouped by Albums, split by Photos/Videos)
+function renderMemories(data) {
+  const container = document.getElementById('galleryContainer');
+  if (!container) return;
+  container.innerHTML = "";
+
+  // Filter based on active tab
+  const filtered = data.filter(m => {
+    if (currentMemoriesTab === 'photos') return m.type !== 'video';
+    return m.type === 'video';
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<p style="text-align: center; color: var(--text); font-family: 'Lora', serif; font-style: italic; margin-top: 20px;">No ${currentMemoriesTab} uploaded yet 🥺</p>`;
+    return;
+  }
+
+  // Predefined album order
+  const albumOrder = ["Date Ideas", "Food Adventures", "Trips", "2025", "2024", "General"];
+
+  // Group filtered data by album
+  const grouped = {};
+  filtered.forEach(item => {
+    const alb = item.album || "General";
+    if (!grouped[alb]) grouped[alb] = [];
+    grouped[alb].push(item);
+  });
+
+  // Render sections
+  albumOrder.forEach(albName => {
+    const items = grouped[albName];
+    if (items && items.length > 0) {
+      const section = document.createElement('div');
+      section.className = 'album-section';
+      
+      const title = document.createElement('h3');
+      title.className = 'album-title';
+      
+      const albumIcons = {
+        "Date Ideas": "calendar-heart",
+        "Food Adventures": "cake-slice",
+        "Trips": "plane",
+        "2025": "calendar",
+        "2024": "calendar",
+        "General": "sparkles"
+      };
+      const iconName = albumIcons[albName] || "sparkles";
+      title.innerHTML = `<i data-lucide="${iconName}"></i> ${albName}`;
+      section.appendChild(title);
+      
+      const grid = document.createElement('div');
+      grid.className = 'album-grid';
+      
+      items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'gallery-card';
+        
+        let mediaHtml = '';
+        if (item.type === 'video') {
+          mediaHtml = `
+            <div class="video-card-preview">
+              <video src="${item.url}" preload="metadata" muted></video>
+              <div class="play-overlay">▶</div>
+            </div>
+          `;
+        } else {
+          mediaHtml = `<img src="${item.url}" alt="${item.caption || 'Memory'}" loading="lazy">`;
+        }
+        
+        const uploaderHtml = item.uploadedBy ? `<span class="uploader-tag">by ${item.uploadedBy}</span>` : '';
+        card.innerHTML = `
+          ${uploaderHtml}
+          ${mediaHtml}
+          <div class="gallery-card-caption">${item.caption || 'Sweet Memory 🌸'}</div>
+        `;
+        
+        card.addEventListener('click', () => {
+          openLightbox(item);
+        });
+        
+        grid.appendChild(card);
+      });
+      
+      section.appendChild(grid);
+      container.appendChild(section);
+    }
+  });
+  if (window.lucide) window.lucide.createIcons();
+}
+
+// State variables for dynamic data
+let activeNotesData = [...notesData];
+
+const fallbackMemories = [
+  { id: 'fb1', url: 'pic/pic1.jpg', type: 'image', caption: 'Sweet Memory 1 🌸', album: '2024', uploadedBy: 'Baby' },
+  { id: 'fb2', url: 'pic/pic2.jpg', type: 'image', caption: 'Sweet Memory 2 💖', album: 'Date Ideas', uploadedBy: 'Cayang' },
+  { id: 'fb3', url: 'pic/pic3.jpg', type: 'image', caption: 'Sweet Memory 3 💕', album: 'Food Adventures', uploadedBy: 'Baby' },
+  { id: 'fb4', url: 'pic/pic4.jpg', type: 'image', caption: 'Sweet Memory 4 🦋', album: 'Trips', uploadedBy: 'Cayang' },
+  { id: 'fb5', url: 'pic/pic5.jpg', type: 'image', caption: 'Sweet Memory 5 ✨', album: '2025', uploadedBy: 'Baby' }
+];
+
+let activeMemoriesData = [...fallbackMemories];
+
+// Caching and Edit state variables
+let lastMessagesSnapshot = null;
+let lastNotesSnapshot = null;
+let lastMemoriesSnapshot = null;
+
+let editingMsgId = null;
+let editingNoteId = null;
+let editingMemId = null;
+
+// Initialize database data load
+function initDataLoad() {
+  if (!db) {
+    renderNotes(activeNotesData);
+    renderMemories(activeMemoriesData);
+    showDailyMsg();
+    return;
+  }
+
+  // Daily Messages Realtime sync
+  db.collection("daily_messages").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+    lastMessagesSnapshot = snapshot;
+    const msgs = [];
+    snapshot.forEach(doc => {
+      msgs.push(doc.data().text);
+    });
+    if (msgs.length > 0) {
+      activeDailyMessages = msgs;
+    } else {
+      activeDailyMessages = [...dailyMessages];
+    }
+    showDailyMsg();
+    renderAdminMessagesList(snapshot);
+  }, err => {
+    console.warn("Firestore messages fetch failed, fallback active:", err);
+    showDailyMsg();
+  });
+
+  // Notes Realtime sync
+  db.collection("notes").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+    lastNotesSnapshot = snapshot;
+    const notes = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      notes.push({
+        id: doc.id,
+        tag: data.tag,
+        body: data.body,
+        from: data.from
+      });
+    });
+    if (notes.length > 0) {
+      activeNotesData = notes;
+    } else {
+      activeNotesData = [...notesData];
+    }
+    renderNotes(activeNotesData);
+    renderAdminNotesList(snapshot);
+  }, err => {
+    console.warn("Firestore notes fetch failed, fallback active:", err);
+    renderNotes(activeNotesData);
+  });
+
+  // Memories Realtime sync
+  db.collection("memories").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+    lastMemoriesSnapshot = snapshot;
+    const mems = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data && data.url) {
+        mems.push({
+          id: doc.id,
+          url: data.url,
+          type: data.type || "image",
+          caption: data.caption || "",
+          album: data.album || "General",
+          uploadedBy: data.uploadedBy || ""
+        });
+      }
+    });
+    activeMemoriesData = [...mems, ...fallbackMemories];
+    renderMemories(activeMemoriesData);
+    renderHomePreviews(activeMemoriesData);
+    renderAdminMemoriesList(snapshot);
+  }, err => {
+    console.warn("Firestore memories fetch failed, fallback active:", err);
+    activeMemoriesData = [...fallbackMemories];
+    renderMemories(activeMemoriesData);
+  });
+}
+
+// ── Admin Panel Login & Toggles ─────────
+let currentAdminUser = null;
+
+const adminLoginCard = document.getElementById('adminLoginCard');
+const adminPanelCard = document.getElementById('adminPanelCard');
+const adminRole = document.getElementById('adminRole');
+const adminPasscode = document.getElementById('adminPasscode');
+const adminLoginBtn = document.getElementById('adminLoginBtn');
+const adminLoginError = document.getElementById('adminLoginError');
+const adminWelcomeTitle = document.getElementById('adminWelcomeTitle');
+const adminLogoutBtn = document.getElementById('adminLogoutBtn');
+
+if (adminLoginBtn) {
+  adminLoginBtn.addEventListener('click', () => {
+    const role = adminRole.value;
+    const pass = adminPasscode.value.trim().toLowerCase();
+    let authenticated = false;
+
+    if (role === 'cayang' && pass === '0203') {
+      authenticated = true;
+      currentAdminUser = 'Cayang 🌸';
+    } else if (role === 'baby' && pass === '0203') {
+      authenticated = true;
+      currentAdminUser = 'Bubu 💖';
+    }
+
+    if (authenticated) {
+      adminLoginCard.style.display = 'none';
+      adminPanelCard.style.display = 'block';
+      adminWelcomeTitle.innerHTML = `Welcome to HQ, ${currentAdminUser} <i data-lucide="settings"></i>`;
+      if (window.lucide) window.lucide.createIcons();
+      adminPasscode.value = '';
+      adminLoginError.style.display = 'none';
+      softBeep(700, 0.2, 0.05);
+    } else {
+      adminLoginError.textContent = 'Incorrect secret passcode! 🥺 Try again baby...';
+      adminLoginError.style.display = 'block';
+      softBeep(300, 0.3, 0.06);
+    }
+  });
+}
+
+if (adminLogoutBtn) {
+  adminLogoutBtn.addEventListener('click', () => {
+    currentAdminUser = null;
+    adminPanelCard.style.display = 'none';
+    adminLoginCard.style.display = 'block';
+    softBeep(450, 0.15, 0.04);
+  });
+}
+
+// ── Browser Credentials Saving Form ──
+const localFbApiKeyInput = document.getElementById('localFbApiKey');
+const localFbProjIdInput = document.getElementById('localFbProjId');
+const localFbAppIdInput = document.getElementById('localFbAppId');
+const localCloudNameInput = document.getElementById('localCloudName');
+const localUploadPresetInput = document.getElementById('localUploadPreset');
+const saveLocalConfigBtn = document.getElementById('saveLocalConfigBtn');
+const clearLocalConfigBtn = document.getElementById('clearLocalConfigBtn');
+
+if (localFbApiKeyInput) localFbApiKeyInput.value = localStorage.getItem('fb_apiKey') || '';
+if (localFbProjIdInput) localFbProjIdInput.value = localStorage.getItem('fb_projectId') || '';
+if (localFbAppIdInput) localFbAppIdInput.value = localStorage.getItem('fb_appId') || '';
+if (localCloudNameInput) localCloudNameInput.value = localStorage.getItem('cl_cloudName') || '';
+if (localUploadPresetInput) localUploadPresetInput.value = localStorage.getItem('cl_uploadPreset') || '';
+
+if (saveLocalConfigBtn) {
+  saveLocalConfigBtn.addEventListener('click', () => {
+    localStorage.setItem('fb_apiKey', localFbApiKeyInput.value.trim());
+    localStorage.setItem('fb_projectId', localFbProjIdInput.value.trim());
+    localStorage.setItem('fb_appId', localFbAppIdInput.value.trim());
+    localStorage.setItem('cl_cloudName', localCloudNameInput.value.trim());
+    localStorage.setItem('cl_uploadPreset', localUploadPresetInput.value.trim());
+    showToast('Local config saved! Reloading to apply changes... 🌸', 'success');
+    softBeep(650, 0.25, 0.05);
+    setTimeout(() => location.reload(), 1500);
+  });
+}
+
+if (clearLocalConfigBtn) {
+  clearLocalConfigBtn.addEventListener('click', () => {
+    localStorage.removeItem('fb_apiKey');
+    localStorage.removeItem('fb_projectId');
+    localStorage.removeItem('fb_appId');
+    localStorage.removeItem('cl_cloudName');
+    localStorage.removeItem('cl_uploadPreset');
+    showToast('Local config cleared! Reloading... 🌸', 'success');
+    setTimeout(() => location.reload(), 1500);
+  });
+}
+
+// ── Admin Subtabs toggler ──
+document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    document.querySelectorAll('.admin-tab-content').forEach(sect => sect.style.display = 'none');
+    const target = btn.dataset.target;
+    if (target === 'adminMsg') document.getElementById('adminMsgSection').style.display = 'block';
+    if (target === 'adminNotes') document.getElementById('adminNotesSection').style.display = 'block';
+    if (target === 'adminMems') document.getElementById('adminMemsSection').style.display = 'block';
+    
+    softBeep(580, 0.15, 0.03);
+  });
+});
+
+// ── Daily Messages CRUD events ──
+const adminMsgList = document.getElementById('adminMsgList');
+const newMsgInput = document.getElementById('newMsgInput');
+const addMsgBtn = document.getElementById('addMsgBtn');
+
+function renderAdminMessagesList(snapshot) {
+  if (!adminMsgList) return;
+  adminMsgList.innerHTML = "";
+  snapshot.forEach(doc => {
+    const text = doc.data().text;
+    const li = document.createElement('li');
+    li.className = 'admin-item';
+    li.innerHTML = `
+      <span class="admin-item-text">${text}</span>
+      <div class="admin-item-actions">
+        <button onclick="startEditMsg('${doc.id}')">Edit</button>
+        <button onclick="deleteDoc('daily_messages', '${doc.id}')">Delete</button>
+      </div>
+    `;
+    adminMsgList.appendChild(li);
+  });
+}
+
+// startEditMsg and cancelMsgEdit
+window.startEditMsg = function(id) {
+  if (!lastMessagesSnapshot) return;
+  const doc = lastMessagesSnapshot.docs.find(d => d.id === id);
+  if (!doc) return;
+  const data = doc.data();
+  newMsgInput.value = data.text || '';
+  editingMsgId = id;
+  addMsgBtn.textContent = 'Update';
+  cancelMsgEditBtn.style.display = 'block';
+  newMsgInput.focus();
+};
+
+if (window.cancelMsgEditBtn) {
+  cancelMsgEditBtn.addEventListener('click', () => {
+    newMsgInput.value = '';
+    editingMsgId = null;
+    addMsgBtn.textContent = 'Add';
+    cancelMsgEditBtn.style.display = 'none';
+  });
+}
+
+if (addMsgBtn) {
+  addMsgBtn.addEventListener('click', () => {
+    const text = newMsgInput.value.trim();
+    if (!text) return;
+    if (!db) {
+      showToast("Database is offline. Configure Firestore credentials! 🥺", "error");
+      return;
+    }
+    if (editingMsgId) {
+      db.collection("daily_messages").doc(editingMsgId).update({
+        text: text
+      }).then(() => {
+        newMsgInput.value = "";
+        editingMsgId = null;
+        addMsgBtn.textContent = "Add";
+        cancelMsgEditBtn.style.display = "none";
+        showToast("Daily message updated successfully! 🌸", "success");
+        softBeep(650, 0.18, 0.04);
+      }).catch(err => showToast("Error: " + err.message, "error"));
+    } else {
+      db.collection("daily_messages").add({
+        text: text,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        newMsgInput.value = "";
+        showToast("Daily message added successfully! 🌸", "success");
+        softBeep(650, 0.18, 0.04);
+      }).catch(err => showToast("Error: " + err.message, "error"));
+    }
+  });
+}
+
+// ── Notes CRUD events ──
+const adminNotesList = document.getElementById('adminNotesList');
+const noteTagInput = document.getElementById('noteTagInput');
+const noteBodyInput = document.getElementById('noteBodyInput');
+const noteFromInput = document.getElementById('noteFromInput');
+const addNoteBtn = document.getElementById('addNoteBtn');
+
+function renderAdminNotesList(snapshot) {
+  if (!adminNotesList) return;
+  adminNotesList.innerHTML = "";
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    const li = document.createElement('li');
+    li.className = 'admin-item';
+    li.innerHTML = `
+      <div class="admin-item-text">
+        <span class="admin-item-tag">${data.tag}</span>
+        <strong>${data.from}</strong>
+        <p style="margin-top:4px; font-size:0.75rem;">${data.body.substring(0, 40)}...</p>
+      </div>
+      <div class="admin-item-actions">
+        <button onclick="startEditNote('${doc.id}')">Edit</button>
+        <button onclick="deleteDoc('notes', '${doc.id}')">Delete</button>
+      </div>
+    `;
+    adminNotesList.appendChild(li);
+  });
+}
+
+// startEditNote and cancelNoteEdit
+window.startEditNote = function(id) {
+  if (!lastNotesSnapshot) return;
+  const doc = lastNotesSnapshot.docs.find(d => d.id === id);
+  if (!doc) return;
+  const data = doc.data();
+  noteTagInput.value = data.tag || '';
+  noteBodyInput.value = data.body || '';
+  noteFromInput.value = data.from || '';
+  editingNoteId = id;
+  addNoteBtn.textContent = 'Update Note';
+  cancelNoteEditBtn.style.display = 'block';
+  noteTagInput.focus();
+};
+
+if (window.cancelNoteEditBtn) {
+  cancelNoteEditBtn.addEventListener('click', () => {
+    noteTagInput.value = '';
+    noteBodyInput.value = '';
+    noteFromInput.value = '';
+    editingNoteId = null;
+    addNoteBtn.textContent = 'Add Note';
+    cancelNoteEditBtn.style.display = 'none';
+  });
+}
+
+if (addNoteBtn) {
+  addNoteBtn.addEventListener('click', () => {
+    const tag = noteTagInput.value.trim();
+    const body = noteBodyInput.value.trim();
+    const from = noteFromInput.value.trim();
+    if (!tag || !body || !from) {
+      showToast("Please fill all fields! 🥺", "error");
+      return;
+    }
+    if (!db) {
+      showToast("Database is offline. Configure Firestore! 🥺", "error");
+      return;
+    }
+    if (editingNoteId) {
+      db.collection("notes").doc(editingNoteId).update({
+        tag, body, from
+      }).then(() => {
+        noteTagInput.value = "";
+        noteBodyInput.value = "";
+        noteFromInput.value = "";
+        editingNoteId = null;
+        addNoteBtn.textContent = "Add Note";
+        cancelNoteEditBtn.style.display = "none";
+        showToast("Love letter note updated successfully! 🌸", "success");
+        softBeep(650, 0.18, 0.04);
+      }).catch(err => showToast("Error: " + err.message, "error"));
+    } else {
+      db.collection("notes").add({
+        tag, body, from,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        noteTagInput.value = "";
+        noteBodyInput.value = "";
+        noteFromInput.value = "";
+        showToast("Love letter note added successfully! 🌸", "success");
+        softBeep(650, 0.18, 0.04);
+      }).catch(err => showToast("Error: " + err.message, "error"));
+    }
+  });
+}
+
+// ── Memories CRUD events ──
+const adminMemsList = document.getElementById('adminMemsList');
+const memCaptionInput = document.getElementById('memCaptionInput');
+const memTypeSelect = document.getElementById('memTypeSelect');
+const memAlbumSelect = document.getElementById('memAlbumSelect');
+const memUrlInput = document.getElementById('memUrlInput');
+const uploadMediaBtn = document.getElementById('uploadMediaBtn');
+const addMemBtn = document.getElementById('addMemBtn');
+
+function renderAdminMemoriesList(snapshot) {
+  if (!adminMemsList) return;
+  adminMemsList.innerHTML = "";
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    const li = document.createElement('li');
+    li.className = 'admin-item';
+    
+    const isVideo = data.type === 'video';
+    const previewHtml = isVideo 
+      ? `<div class="admin-thumb-video">🎥</div>` 
+      : `<img src="${data.url}" class="admin-thumb" alt="Preview">`;
+
+    li.innerHTML = `
+      ${previewHtml}
+      <div class="admin-item-text">
+        <strong>${data.caption || 'No Caption'}</strong>
+        <span class="admin-item-badge">${data.type || 'image'}</span>
+        ${data.uploadedBy ? `<span class="admin-item-badge" style="background: var(--bg); color: var(--btn-shade); border: 1px dashed var(--border); font-family: 'Caveat', cursive; font-size: 0.85rem; font-weight: bold; margin-left: 4px;">by ${data.uploadedBy}</span>` : ''}
+      </div>
+      <div class="admin-item-actions">
+        <button onclick="startEditMem('${doc.id}')">Edit</button>
+        <button onclick="deleteDoc('memories', '${doc.id}')">Delete</button>
+      </div>
+    `;
+    adminMemsList.appendChild(li);
+  });
+}
+
+// Delete document helper (exposed to global onclick events)
+window.deleteDoc = function(collection, id) {
+  if (!db) return;
+  if (confirm("Are you sure you want to delete this item? 🥺")) {
+    db.collection(collection).doc(id).delete()
+      .then(() => {
+        showToast("Item deleted successfully! 🌸", "success");
+        softBeep(400, 0.25, 0.05);
+      })
+      .catch(err => showToast("Error: " + err.message, "error"));
+  }
+};
+
+// startEditMem and cancelMemEdit
+window.startEditMem = function(id) {
+  if (!lastMemoriesSnapshot) return;
+  const doc = lastMemoriesSnapshot.docs.find(d => d.id === id);
+  if (!doc) return;
+  const data = doc.data();
+  memCaptionInput.value = data.caption || '';
+  memTypeSelect.value = data.type || 'image';
+  if (memAlbumSelect) memAlbumSelect.value = data.album || 'General';
+  memUrlInput.value = data.url || '';
+  editingMemId = id;
+  addMemBtn.textContent = 'Update Memory';
+  cancelMemEditBtn.style.display = 'block';
+  memCaptionInput.focus();
+};
+
+if (window.cancelMemEditBtn) {
+  cancelMemEditBtn.addEventListener('click', () => {
+    memCaptionInput.value = '';
+    memTypeSelect.value = 'image';
+    if (memAlbumSelect) memAlbumSelect.value = 'General';
+    memUrlInput.value = '';
+    editingMemId = null;
+    addMemBtn.textContent = 'Add Memory';
+    cancelMemEditBtn.style.display = 'none';
+  });
+}
+
+if (addMemBtn) {
+  addMemBtn.addEventListener('click', () => {
+    const caption = memCaptionInput.value.trim();
+    const type = memTypeSelect.value;
+    const album = memAlbumSelect ? memAlbumSelect.value : 'General';
+    const url = memUrlInput.value.trim();
+    if (!url) {
+      showToast("Please upload a file or paste a URL! 🥺", "error");
+      return;
+    }
+    if (!db) {
+      showToast("Database is offline. Configure Firestore! 🥺", "error");
+      return;
+    }
+    if (editingMemId) {
+      db.collection("memories").doc(editingMemId).update({
+        caption, type, album, url
+      }).then(() => {
+        memCaptionInput.value = "";
+        if (memAlbumSelect) memAlbumSelect.value = "General";
+        memUrlInput.value = "";
+        editingMemId = null;
+        addMemBtn.textContent = "Add Memory";
+        cancelMemEditBtn.style.display = "none";
+        showToast("Memory updated successfully! 🌸", "success");
+        softBeep(650, 0.18, 0.04);
+      }).catch(err => showToast("Error: " + err.message, "error"));
+    } else {
+      const uploader = (currentAdminUser && currentAdminUser.includes('Cayang')) ? 'Cayang' : 'Baby';
+      db.collection("memories").add({
+        caption, type, album, url,
+        uploadedBy: uploader,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        memCaptionInput.value = "";
+        if (memAlbumSelect) memAlbumSelect.value = "General";
+        memUrlInput.value = "";
+        showToast("Memory added successfully! 🌸", "success");
+        softBeep(650, 0.18, 0.04);
+      }).catch(err => showToast("Error: " + err.message, "error"));
+    }
+  });
+}
+
+// ── Cloudinary Direct Unsigned Upload (Drag & Drop / Select File) ──
+if (window.dropZone && window.fileInput) {
+  // Trigger file selection on click
+  dropZone.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  // Drag over states
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+
+  dropZone.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('dragover');
+  });
+
+  dropZone.addEventListener('dragend', () => {
+    dropZone.classList.remove('dragover');
+  });
+
+  // Handle dropped files
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      uploadFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  // Handle selected files
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files && fileInput.files.length > 0) {
+      uploadFile(fileInput.files[0]);
+    }
+  });
+
+  function uploadFile(file) {
+    const cloudName = getConfig().cloudinary.cloudName;
+    const uploadPreset = getConfig().cloudinary.uploadPreset;
+
+    if (!cloudName || cloudName === "YOUR_CLOUD_NAME" || !uploadPreset || uploadPreset === "YOUR_UPLOAD_PRESET") {
+      showToast("Please configure your Cloudinary Cloud Name and Upload Preset in the local config block or in script.js first! 🥺", "error");
+      return;
+    }
+
+    // Set UI to uploading
+    dropZoneText.textContent = `Uploading ${file.name}...`;
+    uploadProgress.style.display = 'block';
+    uploadProgressBar.style.width = '0%';
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', uploadPreset);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/upload`, true);
+
+    // Track upload progress
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        uploadProgressBar.style.width = `${percent}%`;
+        dropZoneText.textContent = `Uploading ${file.name} (${percent}%)`;
+      }
+    });
+
+    // Handle complete
+    xhr.addEventListener('load', () => {
+      if (xhr.status === 200) {
+        try {
+          const response = JSON.parse(xhr.responseText);
+          memUrlInput.value = response.secure_url;
+          
+          // Auto-select type
+          if (file.type.startsWith('video/')) {
+            memTypeSelect.value = 'video';
+          } else {
+            memTypeSelect.value = 'image';
+          }
+
+          dropZoneText.textContent = `Upload successful! 🎉`;
+          showToast('Yeay, cayang success upload', 'success');
+          softBeep(750, 0.22, 0.06);
+        } catch (err) {
+          dropZoneText.textContent = `Failed to parse upload response 🥺`;
+          showToast("Error parsing response: " + err.message, "error");
+        }
+      } else {
+        dropZoneText.textContent = `Upload failed (Status: ${xhr.status}) 🥺`;
+        try {
+          const response = JSON.parse(xhr.responseText);
+          showToast(`Cloudinary error: ${response.error?.message || 'Unknown error'}`, "error");
+        } catch (err) {
+          showToast(`Upload failed: Server returned status ${xhr.status}`, "error");
+        }
+      }
+      
+      // Clear progress bar
+      setTimeout(() => {
+        uploadProgress.style.display = 'none';
+        uploadProgressBar.style.width = '0%';
+        if (dropZoneText.textContent === `Upload successful! 🎉` || dropZoneText.textContent.includes('failed')) {
+          dropZoneText.textContent = `Drag & drop photo/video here, or click to browse`;
+        }
+      }, 2000);
+    });
+
+    // Handle error
+    xhr.addEventListener('error', () => {
+      dropZoneText.textContent = `Upload failed 🥺`;
+      showToast("An error occurred during file upload. Check your internet connection or console.", "error");
+      uploadProgress.style.display = 'none';
+    });
+
+    xhr.send(formData);
+  }
+}
+
+// Initial DB call
+initDataLoad();
+
+// Initial Lucide icons parse
+if (window.lucide) {
+  window.lucide.createIcons();
 }
 
 /* ── Gallery drag scroll ── */

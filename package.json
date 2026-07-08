@@ -1,0 +1,8 @@
+{
+  "name": "mylurve",
+  "version": "1.0.0",
+  "description": "Our Little Memories",
+  "scripts": {
+    "build": "node build.js"
+  }
+}

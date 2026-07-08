@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Dancing+Script:wght@500;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Caveat:wght@500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -37,8 +37,18 @@
   <!-- Loading screen -->
   <div id="loadingScreen" class="loading-screen">
     <div class="loading-inner">
-      <div class="loading-heart">💖</div>
-      <p id="loadingText" class="loading-text">Loading something cute for you...</p>
+      <div class="loading-hearts-container" id="loadingHeartsContainer">
+        <span class="l-heart left-heart" id="leftHeart">❤️</span>
+        <span class="l-heart right-heart" id="rightHeart">❤️</span>
+        <span class="l-heart merged-heart" id="mergedHeart" style="display: none;">💖</span>
+      </div>
+      <p id="loadingText" class="loading-text"><span id="loadingTextContent"></span><span class="loading-cursor" id="loadingCursor">|</span></p>
+      
+      <div class="loading-bar-container">
+        <div class="loading-bar-fill" id="loadingBarFill"></div>
+      </div>
+      
+      <p class="loading-percent" id="loadingPercent">0%</p>
     </div>
   </div>
 
@@ -49,10 +59,10 @@
     <header class="topbar">
       <div class="topbar-inner">
         <div class="topbar-brand">
-          <span class="brand-icon">🌸</span>
+          <span class="brand-icon"><i data-lucide="sparkles"></i></span>
           <span class="brand-name">CutiePie</span>
         </div>
-        <button id="soundToggle" class="icon-btn" aria-label="Toggle sound" title="Toggle sound">🔇</button>
+        <button id="soundToggle" class="icon-btn" aria-label="Toggle sound" title="Toggle sound"><i data-lucide="volume-x"></i></button>
       </div>
     </header>
 
@@ -74,7 +84,7 @@
             <h1 class="hero-title">For You, Cyg 🌸</h1>
             <p class="hero-sub">You make every moment sweeter just by existing ✨</p>
             <button id="loveBtn" class="love-btn">
-              <span class="love-btn-heart">💖</span>
+              <span class="love-btn-heart"><i data-lucide="heart"></i></span>
               <span>I Love You</span>
             </button>
           </div>
@@ -82,9 +92,9 @@
 
         <!-- Daily sweet message -->
         <div class="section-card daily-card fade-reveal">
-          <div class="daily-label">💌 Daily Sweet Message</div>
+          <div class="daily-label"><i data-lucide="mail"></i> Daily Sweet Message</div>
           <p id="dailyMsg" class="daily-msg"></p>
-          <button id="newMsgBtn" class="chip-btn">New message 🌷</button>
+          <button id="newMsgBtn" class="chip-btn">New message <i data-lucide="sparkles"></i></button>
         </div>
 
         <!-- Greeting card (morning / night) -->
@@ -94,9 +104,22 @@
           <p id="greetMsg" class="greet-msg"></p>
         </div>
 
+        <!-- Memories Preview Card -->
+        <div class="section-card fade-reveal" id="homeMemoriesPreviewCard">
+          <h2 class="section-title">Our Sweet Previews <i data-lucide="sparkles"></i></h2>
+          <p class="section-sub">A tiny glance at our beautiful journey...</p>
+          <div class="home-preview-grid" id="homeMemoriesPreviewGrid">
+            <!-- Loaded dynamically in script.js -->
+          </div>
+          <button id="viewAllMemoriesBtn" class="love-btn" style="margin-top: 20px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>View All Memories</span>
+            <i data-lucide="arrow-right"></i>
+          </button>
+        </div>
+
         <!-- Mood buttons -->
         <div class="section-card fade-reveal" id="moodSection">
-          <h2 class="section-title">How are you feeling? 🤍</h2>
+          <h2 class="section-title">How are you feeling? <i data-lucide="heart"></i></h2>
           <p class="section-sub">Tap your vibe, I wanna know 🥺</p>
           <div class="mood-grid" id="moodGrid">
             <button class="mood-btn" data-mood="happy">😊<span>Happy</span></button>
@@ -115,32 +138,19 @@
       <section class="page" id="pageMemories" data-page="memories">
 
         <div class="page-header fade-reveal">
-          <h1 class="page-title">Our Little Memories 📸</h1>
+          <h1 class="page-title">Our Little Memories <i data-lucide="heart"></i></h1>
           <p class="page-sub">Every picture tells our story, cyg 🌸</p>
         </div>
 
-        <!-- Gallery -->
-        <div class="section-card fade-reveal" style="overflow:hidden;padding:14px 0 14px;">
-          <div class="gallery-wrap">
-            <div class="gallery-track" id="galleryTrack">
-              <figure class="photo"><img src="pic/pic1.jpg" alt="Memory 1" loading="lazy">
-                <div class="photo-overlay"><span class="photo-heart">💖</span></div>
-              </figure>
-              <figure class="photo"><img src="pic/pic2.jpg" alt="Memory 2" loading="lazy">
-                <div class="photo-overlay"><span class="photo-heart">💖</span></div>
-              </figure>
-              <figure class="photo"><img src="pic/pic3.jpg" alt="Memory 3" loading="lazy">
-                <div class="photo-overlay"><span class="photo-heart">💖</span></div>
-              </figure>
-              <figure class="photo"><img src="pic/pic4.jpg" alt="Memory 4" loading="lazy">
-                <div class="photo-overlay"><span class="photo-heart">💖</span></div>
-              </figure>
-              <figure class="photo"><img src="pic/pic5.jpg" alt="Memory 5" loading="lazy">
-                <div class="photo-overlay"><span class="photo-heart">💖</span></div>
-              </figure>
-            </div>
-          </div>
-          <p class="gallery-hint">✨ Swipe to browse our moments</p>
+        <!-- Photos/Videos filter tabs -->
+        <div class="gallery-tabs fade-reveal">
+          <button id="memShowPhotosBtn" class="gallery-tab-btn active"><i data-lucide="images"></i> Photos</button>
+          <button id="memShowVideosBtn" class="gallery-tab-btn"><i data-lucide="clapperboard"></i> Videos</button>
+        </div>
+
+        <!-- Grid container for grouped albums -->
+        <div id="galleryContainer" class="gallery-container fade-reveal">
+          <!-- Populated dynamically: groups of albums/timelines -->
         </div>
 
         <!-- Fave food section -->
@@ -171,15 +181,7 @@
           </div>
         </div>
 
-        <!-- Video memory -->
-        <div class="section-card fade-reveal" style="overflow:hidden;padding:14px;">
-          <h2 class="section-title">🎬 Our Little Video</h2>
-          <div class="vid-wrap">
-            <video id="memoryVid" playsinline autoplay muted loop>
-              <source src="vid1.mp4" type="video/mp4">
-            </video>
-          </div>
-        </div>
+        <!-- Video memory card removed, now integrated in Videos tab -->
 
       </section>
 
@@ -197,21 +199,209 @@
 
       </section>
 
+      <!-- ════ PAGE: ADMIN ════ -->
+      <section class="page" id="pageAdmin" data-page="admin">
+
+        <div class="page-header fade-reveal">
+          <h1 class="page-title">Our HQ <i data-lucide="settings"></i></h1>
+          <p class="page-sub">Create, edit, and delete contents</p>
+        </div>
+
+        <!-- Admin Passcode Form -->
+        <div id="adminLoginCard" class="section-card fade-reveal">
+          <h2 class="section-title">Access HQ <i data-lucide="key"></i></h2>
+          <p class="section-sub">Please select your identity and enter your secret passcode.</p>
+          
+          <div class="field">
+            <label for="adminRole">Select Identity</label>
+            <div class="select-wrap">
+              <select id="adminRole">
+                <option value="cayang">Cayang</option>
+                <option value="baby">Baby</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="adminPasscode">Secret Passcode</label>
+            <input id="adminPasscode" type="text" placeholder="Passcode..." style="-webkit-text-security: disc; text-security: disc;">
+          </div>
+
+          <button id="adminLoginBtn" class="love-btn" style="margin-top: 10px;">Unlock Console</button>
+          <p id="adminLoginError" style="color: var(--btn-shade); margin-top: 10px; font-family: 'Caveat', cursive; font-size: 1.15rem; display: none;"></p>
+          
+          <!-- Browser API Credentials Configuration -->
+          <details style="margin-top: 20px; font-size: 0.82rem; color: var(--text);">
+            <summary style="cursor: pointer; font-weight: bold; text-decoration: underline;">Configure API Keys locally</summary>
+            <div style="margin-top: 10px; padding: 12px; border: 1px dashed var(--border); border-radius: var(--radius-s); background: rgba(255,255,255,0.45);">
+              <p style="margin-bottom: 8px; line-height: 1.4;">Paste your credentials here to persist them in your browser's local storage (avoids hardcoding keys):</p>
+              
+              <div class="field" style="margin-bottom: 10px;">
+                <label style="font-size: 0.8rem; margin-bottom: 2px;">Firestore API Key</label>
+                <input id="localFbApiKey" type="text" style="font-size: 0.8rem; padding: 4px 2px;">
+              </div>
+              <div class="field" style="margin-bottom: 10px;">
+                <label style="font-size: 0.8rem; margin-bottom: 2px;">Firestore Project ID</label>
+                <input id="localFbProjId" type="text" style="font-size: 0.8rem; padding: 4px 2px;">
+              </div>
+              <div class="field" style="margin-bottom: 10px;">
+                <label style="font-size: 0.8rem; margin-bottom: 2px;">Firestore App ID</label>
+                <input id="localFbAppId" type="text" style="font-size: 0.8rem; padding: 4px 2px;">
+              </div>
+              <div class="field" style="margin-bottom: 10px;">
+                <label style="font-size: 0.8rem; margin-bottom: 2px;">Cloudinary Cloud Name</label>
+                <input id="localCloudName" type="text" style="font-size: 0.8rem; padding: 4px 2px;">
+              </div>
+              <div class="field" style="margin-bottom: 10px;">
+                <label style="font-size: 0.8rem; margin-bottom: 2px;">Cloudinary Preset (Unsigned)</label>
+                <input id="localUploadPreset" type="text" style="font-size: 0.8rem; padding: 4px 2px;">
+              </div>
+              
+              <div style="display: flex; gap: 8px; margin-top: 12px;">
+                <button id="saveLocalConfigBtn" class="chip-btn" style="font-size: 0.75rem; padding: 6px 10px;">Save Config</button>
+                <button id="clearLocalConfigBtn" class="chip-btn" style="font-size: 0.75rem; padding: 6px 10px; background: transparent; color: var(--btn-shade);">Clear</button>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <!-- Admin Control Console (visible only after successful login) -->
+        <div id="adminPanelCard" class="section-card fade-reveal" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px dashed var(--border); padding-bottom: 10px;">
+            <h2 id="adminWelcomeTitle" class="section-title" style="margin: 0;">Welcome to Our HQ</h2>
+            <button id="adminLogoutBtn" class="chip-btn" style="background: transparent; border: 1.5px solid var(--btn); color: var(--btn); font-weight: bold; font-family: 'Caveat', cursive; font-size: 1.1rem; padding: 4px 10px; border-radius: var(--radius-s); display: flex; align-items: center; gap: 4px; box-shadow: 2px 2px 0 var(--btn); transition: all 0.1s ease; cursor: pointer;">
+              <i data-lucide="log-out" style="width: 14px; height: 14px; stroke: var(--btn); stroke-width: 2.2;"></i>
+              <span>Logout</span>
+            </button>
+          </div>
+
+          <!-- Section Tabs -->
+          <div style="display: flex; gap: 6px; margin-bottom: 20px;">
+            <button class="admin-tab-btn active" data-target="adminMsg"><i data-lucide="message-square"></i> Messages</button>
+            <button class="admin-tab-btn" data-target="adminNotes"><i data-lucide="mail"></i> Notes</button>
+            <button class="admin-tab-btn" data-target="adminMems"><i data-lucide="images"></i> Memories</button>
+          </div>
+
+          <!-- TAB 1: DAILY MESSAGES -->
+          <div id="adminMsgSection" class="admin-tab-content">
+            <h3 class="section-title">Manage Daily Messages</h3>
+            <div class="field" style="display: flex; gap: 8px; margin-bottom: 16px;">
+              <input id="newMsgInput" type="text" placeholder="Type new daily message..." style="flex: 1; border-bottom: 2px solid var(--border);">
+              <button id="addMsgBtn" class="chip-btn" style="white-space: nowrap;">Add</button>
+              <button id="cancelMsgEditBtn" class="chip-btn" style="white-space: nowrap; display: none; background: transparent; border: 1px solid var(--border); color: var(--text);">Cancel</button>
+            </div>
+            <div style="margin-top: 20px; border-top: 1px dashed var(--border); padding-top: 15px;">
+              <h4 style="font-size: 0.85rem; font-weight: bold; margin-bottom: 10px; color: var(--text);">Current Daily Messages</h4>
+              <ul id="adminMsgList" class="admin-list">
+                <!-- Dynamically populated -->
+              </ul>
+            </div>
+          </div>
+
+          <!-- TAB 2: NOTES -->
+          <div id="adminNotesSection" class="admin-tab-content" style="display: none;">
+            <h3 class="section-title">Manage Notes</h3>
+            <div class="field">
+              <label for="noteTagInput">Note Tag</label>
+              <input id="noteTagInput" type="text" placeholder="e.g. From Bubu">
+            </div>
+            <div class="field">
+              <label for="noteBodyInput">Note Body</label>
+              <textarea id="noteBodyInput" placeholder="Write your words here..."></textarea>
+            </div>
+            <div class="field">
+              <label for="noteFromInput">Signature</label>
+              <input id="noteFromInput" type="text" placeholder="e.g. — Your Baby">
+            </div>
+            <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+              <button id="addNoteBtn" class="love-btn" style="flex: 1; margin: 0;">Add Note</button>
+              <button id="cancelNoteEditBtn" class="love-btn" style="flex: 1; margin: 0; display: none; background: transparent; border: 2px solid var(--border); color: var(--text);">Cancel</button>
+            </div>
+            <div style="margin-top: 20px; border-top: 1px dashed var(--border); padding-top: 15px;">
+              <h4 style="font-size: 0.85rem; font-weight: bold; margin-bottom: 10px; color: var(--text);">Current Love Letters</h4>
+              <ul id="adminNotesList" class="admin-list">
+                <!-- Dynamically populated -->
+              </ul>
+            </div>
+          </div>
+
+          <!-- TAB 3: MEMORIES -->
+          <div id="adminMemsSection" class="admin-tab-content" style="display: none;">
+            <h3 class="section-title">Manage Memories</h3>
+            <div class="field">
+              <label for="memCaptionInput">Caption</label>
+              <input id="memCaptionInput" type="text" placeholder="e.g. Memory 1">
+            </div>
+            <div class="field">
+              <label for="memTypeSelect">Media Type</label>
+              <div class="select-wrap">
+                <select id="memTypeSelect">
+                  <option value="image">Image</option>
+                  <option value="video">Video</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="memAlbumSelect">Album / Timeline</label>
+              <div class="select-wrap">
+                <select id="memAlbumSelect">
+                  <option value="General">General</option>
+                  <option value="Date Ideas">Date Ideas</option>
+                  <option value="Food Adventures">Food Adventures</option>
+                  <option value="Trips">Trips</option>
+                  <option value="2025">2025</option>
+                  <option value="2024">2024</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label>Media File</label>
+              <div id="dropZone" class="upload-zone">
+                <span class="upload-zone-icon"><i data-lucide="image"></i></span>
+                <span id="dropZoneText" class="upload-zone-text">Drag & drop photo/video here, or click to browse</span>
+                <span class="upload-zone-sub">Uploads directly to Cloudinary</span>
+                <div id="uploadProgress" class="upload-progress">
+                  <div id="uploadProgressBar" class="upload-progress-bar"></div>
+                </div>
+              </div>
+              <input type="file" id="fileInput" accept="image/*,video/*" style="display: none;">
+              <input id="memUrlInput" type="text" placeholder="Or paste direct image/video URL..." style="margin-top: 8px;">
+            </div>
+            <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+              <button id="addMemBtn" class="love-btn" style="flex: 1; margin: 0;">Add Memory</button>
+              <button id="cancelMemEditBtn" class="love-btn" style="flex: 1; margin: 0; display: none; background: transparent; border: 2px solid var(--border); color: var(--text);">Cancel</button>
+            </div>
+            <div style="margin-top: 20px; border-top: 1px dashed var(--border); padding-top: 15px;">
+              <h4 style="font-size: 0.85rem; font-weight: bold; margin-bottom: 10px; color: var(--text);">Uploaded Memories</h4>
+              <ul id="adminMemsList" class="admin-list">
+                <!-- Dynamically populated -->
+              </ul>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
     </main>
 
     <!-- ── BOTTOM NAV ─────────────────────────────── -->
     <nav class="bottom-nav" id="bottomNav" aria-label="Main navigation">
       <button class="nav-btn active" data-page="home" aria-label="Home">
-        <span class="nav-icon">🏠</span>
+        <span class="nav-icon"><i data-lucide="home"></i></span>
         <span class="nav-label">Home</span>
       </button>
       <button class="nav-btn" data-page="memories" aria-label="Memories">
-        <span class="nav-icon">📸</span>
+        <span class="nav-icon"><i data-lucide="heart"></i></span>
         <span class="nav-label">Memories</span>
       </button>
       <button class="nav-btn" data-page="notes" aria-label="Notes">
-        <span class="nav-icon">💌</span>
+        <span class="nav-icon"><i data-lucide="mail"></i></span>
         <span class="nav-label">Notes</span>
+      </button>
+      <button class="nav-btn" data-page="admin" aria-label="Admin">
+        <span class="nav-icon"><i data-lucide="settings"></i></span>
+        <span class="nav-label">Our HQ</span>
       </button>
     </nav>
 
@@ -221,12 +411,28 @@
       <small>Made with 💖 by Your Baby &nbsp;·&nbsp; Dari Johor dengan love 🌸</small>
     </footer>
 
+    <!-- Lightbox Modal -->
+    <div id="lightboxModal" class="lightbox-modal">
+      <span class="lightbox-close" id="lightboxClose">&times;</span>
+      <div class="lightbox-content">
+        <img id="lightboxImg" src="" alt="Full view" style="display: none;">
+        <video id="lightboxVid" controls style="display: none; max-width: 100%; max-height: 80vh;"></video>
+      </div>
+      <p id="lightboxCaption" class="lightbox-caption"></p>
+    </div>
+
   </div><!-- /app -->
 
   <audio id="bgm" loop preload="auto">
     <source src="bgm.mp3" type="audio/mpeg">
   </audio>
 
+  <!-- SDK scripts for Firestore, Cloudinary & Lucide Icons -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.min.js"></script>
+  <script src="config.js"></script>
   <script src="script.js"></script>
 </body>
 
