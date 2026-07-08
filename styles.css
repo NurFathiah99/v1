@@ -43,19 +43,19 @@ body {
     min-height: 100vh;
     display: flex;
     justify-content: center;
-    padding: 28px 12px 60px;
+    padding: clamp(16px, 3vw, 36px) clamp(8px, 2vw, 24px) 60px;
 }
 
 /* ── Phone Frame / Letter Backdrop ────── */
 .app {
     position: relative;
-    width: 100%;
-    max-width: 420px;
+    width: min(100%, 480px);
+    max-width: 100%;
     background: repeating-linear-gradient(var(--bg) 0px, var(--bg) 27px, rgba(67, 49, 42, 0.055) 28px);
     border: 2px solid var(--border);
     border-radius: 4px 4px 18px 18px;
     box-shadow: 0 24px 50px -18px rgba(61, 42, 38, 0.55), 0 2px 0 var(--border);
-    padding: 22px 20px calc(110px + env(safe-area-inset-bottom));
+    padding: clamp(16px, 3vw, 28px) clamp(14px, 3vw, 28px) calc(110px + env(safe-area-inset-bottom));
     z-index: 1;
     display: flex;
     flex-direction: column;
@@ -73,7 +73,7 @@ body {
             55% 90%, 59% 20%, 63% 80%, 67% 10%, 71% 70%, 75% 25%, 79% 95%,
             83% 15%, 87% 75%, 91% 5%, 95% 65%, 100% 30%, 100% 100%);
     border-bottom: 2px solid var(--border);
-    margin: -22px -20px 15px -20px;
+    margin: clamp(-22px, -3vw, -16px) clamp(-28px, -3vw, -14px) 15px clamp(-28px, -3vw, -14px);
 }
 
 /* ── Header / Topbar ─────────────────── */
@@ -114,7 +114,7 @@ body {
 h1, .page-title {
     font-family: 'Cormorant Garamond', serif;
     font-weight: 700;
-    font-size: 2.1rem;
+    font-size: clamp(1.9rem, 4vw, 2.5rem);
     letter-spacing: .01em;
     margin: 2px 0 6px;
     color: var(--text);
@@ -123,13 +123,13 @@ h1, .page-title {
 h2, .section-title {
     font-family: 'Cormorant Garamond', serif;
     font-weight: 700;
-    font-size: 1.6rem;
+    font-size: clamp(1.4rem, 3vw, 1.9rem);
     margin: 0 0 6px;
     color: var(--text);
 }
 
 p, .section-sub, .page-sub {
-    font-size: 0.88rem;
+    font-size: clamp(0.84rem, 1.8vw, 1rem);
     color: #6b5347;
     line-height: 1.5;
     margin-bottom: 14px;
@@ -170,9 +170,10 @@ p, .section-sub, .page-sub {
     border: 2px solid var(--border);
     border-radius: var(--radius-m);
     box-shadow: 4px 4px 0 var(--border);
-    padding: 16px;
-    margin-bottom: 24px;
+    padding: clamp(14px, 2.5vw, 24px);
+    margin-bottom: clamp(16px, 3vw, 30px);
     position: relative;
+    width: 100%;
 }
 
 /* ticket design circle cutouts */
@@ -247,12 +248,12 @@ p, .section-sub, .page-sub {
     gap: 8px;
     font-family: 'Lora', serif;
     font-weight: 600;
-    font-size: 0.98rem;
+    font-size: clamp(0.93rem, 2vw, 1.05rem);
     color: var(--bg);
     background: var(--btn);
     border: 2px solid var(--border);
     border-radius: var(--radius-m);
-    padding: 14px 20px;
+    padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 28px);
     box-shadow: 4px 4px 0 var(--border);
     cursor: pointer;
     transition: transform .09s ease, box-shadow .09s ease;
@@ -260,7 +261,7 @@ p, .section-sub, .page-sub {
     user-select: none;
     min-height: 48px;
     width: 100%;
-    margin: 16px 0;
+    margin: clamp(12px, 2vw, 20px) 0;
 }
 
 .love-btn:active {
@@ -318,7 +319,7 @@ p, .section-sub, .page-sub {
 .mood-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
+    gap: clamp(6px, 1.5vw, 12px);
     margin-top: 12px;
 }
 
@@ -331,10 +332,10 @@ p, .section-sub, .page-sub {
     background: var(--bg);
     border: 2px solid var(--border);
     border-radius: var(--radius-s);
-    padding: 8px 2px;
+    padding: clamp(8px, 1.5vw, 14px) 2px;
     box-shadow: 2px 2px 0 var(--border);
     font-family: 'Lora', serif;
-    font-size: 0.82rem;
+    font-size: clamp(0.8rem, 1.5vw, 0.95rem);
     color: var(--text);
     cursor: pointer;
     transition: all 0.09s ease;
@@ -355,7 +356,7 @@ p, .section-sub, .page-sub {
 
 .mood-btn span {
     font-family: 'Caveat', cursive;
-    font-size: 0.78rem;
+    font-size: clamp(0.75rem, 1.3vw, 0.9rem);
     font-weight: 600;
 }
 
@@ -379,7 +380,7 @@ p, .section-sub, .page-sub {
 
 .gallery-track {
     display: flex;
-    gap: 16px;
+    gap: clamp(12px, 2vw, 20px);
     padding: 10px 14px;
     width: max-content;
 }
@@ -408,8 +409,8 @@ p, .section-sub, .page-sub {
 }
 
 .photo img {
-    height: 180px;
-    width: 135px;
+    height: clamp(140px, 22vw, 220px);
+    width: clamp(105px, 17vw, 165px);
     object-fit: cover;
     border: 2px solid var(--border);
     display: block;
@@ -434,7 +435,7 @@ p, .section-sub, .page-sub {
 .fave-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: clamp(10px, 2vw, 18px);
     margin-top: 12px;
 }
 
@@ -442,26 +443,27 @@ p, .section-sub, .page-sub {
     background: var(--bg);
     border: 2px solid var(--border);
     border-radius: var(--radius-s);
-    padding: 14px 10px;
+    padding: clamp(12px, 2vw, 20px) clamp(8px, 1.5vw, 16px);
     box-shadow: 3px 3px 0 var(--border);
     text-align: center;
+    width: 100%;
 }
 
 .fave-icon {
-    font-size: 1.8rem;
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
     margin-bottom: 4px;
 }
 
 .fave-label {
     font-family: 'Cormorant Garamond', serif;
     font-weight: 700;
-    font-size: 1.15rem;
+    font-size: clamp(1rem, 2vw, 1.35rem);
     color: var(--text);
 }
 
 .fave-note {
     font-family: 'Caveat', cursive;
-    font-size: 0.95rem;
+    font-size: clamp(0.88rem, 1.5vw, 1.05rem);
     color: var(--btn-shade);
     margin-top: 4px;
 }
@@ -533,14 +535,13 @@ p, .section-sub, .page-sub {
     position: fixed;
     left: 50%;
     transform: translateX(-50%);
-    width: 100%;
-    max-width: 420px;
+    width: min(100%, 480px);
     bottom: 0;
     display: flex;
     justify-content: space-around;
     align-items: flex-end;
-    gap: 8px;
-    padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+    gap: clamp(6px, 1.5vw, 14px);
+    padding: clamp(8px, 1.5vw, 14px) clamp(10px, 2vw, 20px) calc(clamp(10px, 1.5vw, 14px) + env(safe-area-inset-bottom));
     background: var(--container);
     border-top: 2px solid var(--border);
     z-index: 1000;
@@ -554,8 +555,8 @@ p, .section-sub, .page-sub {
     align-items: center;
     justify-content: center;
     gap: 4px;
-    height: 66px;
-    padding: 6px 4px;
+    height: clamp(58px, 8vw, 72px);
+    padding: clamp(4px, 1vw, 8px) clamp(4px, 1vw, 8px);
     background: var(--bg);
     border: 2px solid var(--border);
     border-radius: var(--radius-s);
@@ -1170,17 +1171,19 @@ p, .section-sub, .page-sub {
 .home-preview-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    gap: clamp(8px, 1.5vw, 14px);
     margin-top: 15px;
+    width: 100%;
 }
 
 .preview-cell {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius-s);
-    padding: 6px;
+    padding: clamp(4px, 1vw, 8px);
     box-shadow: 2px 2px 0 var(--border);
     cursor: pointer;
+    width: 100%;
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -1247,7 +1250,7 @@ p, .section-sub, .page-sub {
 .gallery-container {
     display: flex;
     flex-direction: column;
-    gap: 30px;
+    gap: clamp(20px, 4vw, 40px);
     margin-bottom: 30px;
 }
 
@@ -1258,7 +1261,7 @@ p, .section-sub, .page-sub {
 
 .album-title {
     font-family: 'Caveat', cursive;
-    font-size: 1.6rem;
+    font-size: clamp(1.4rem, 3vw, 1.9rem);
     font-weight: bold;
     color: var(--btn-shade);
     margin-bottom: 12px;
@@ -1271,8 +1274,8 @@ p, .section-sub, .page-sub {
 
 .album-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(clamp(120px, 18vw, 180px), 1fr));
+    gap: clamp(10px, 2vw, 20px);
 }
 
 .gallery-card {
@@ -1475,3 +1478,130 @@ p, .section-sub, .page-sub {
     left: 4px;
 }
 
+/* ═══════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   Mobile-first → Tablet → Desktop
+   ═══════════════════════════════════════════════ */
+
+/* ── Tablet (768px – 1024px) ──────────────────── */
+@media (min-width: 768px) {
+    body {
+        padding: clamp(24px, 4vw, 48px) clamp(16px, 3vw, 40px) 80px;
+        align-items: flex-start;
+    }
+
+    .app {
+        width: min(100%, 660px);
+        max-width: 660px;
+        padding: clamp(22px, 3.5vw, 36px) clamp(22px, 3.5vw, 36px) calc(120px + env(safe-area-inset-bottom));
+    }
+
+    /* Deckled edge correction for wider container */
+    .app::before {
+        margin-left: clamp(-36px, -3.5vw, -22px);
+        margin-right: clamp(-36px, -3.5vw, -22px);
+        margin-top: clamp(-36px, -3.5vw, -22px);
+    }
+
+    .bottom-nav {
+        width: min(100%, 660px);
+    }
+
+    /* Typography */
+    .topbar-brand {
+        font-size: clamp(2rem, 4vw, 2.6rem);
+    }
+
+    .brand-icon {
+        font-size: clamp(1.6rem, 3vw, 2rem);
+    }
+
+    /* Section cards */
+    .section-card {
+        padding: clamp(18px, 3vw, 30px);
+    }
+
+    /* Preview grid: 3-col on tablet stays but cells grow */
+    .home-preview-grid {
+        gap: clamp(10px, 2vw, 18px);
+    }
+
+    /* Memories album grid: more columns available */
+    .album-grid {
+        grid-template-columns: repeat(auto-fill, minmax(clamp(140px, 20vw, 200px), 1fr));
+    }
+
+    /* Fave grid can be 4-col on tablet */
+    .fave-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    /* Mood grid stays 4-col but buttons are larger */
+    .mood-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: clamp(10px, 2vw, 16px);
+    }
+
+    /* Gallery tabs */
+    .gallery-tabs {
+        gap: clamp(14px, 2.5vw, 24px);
+    }
+
+    .gallery-tab-btn {
+        padding: clamp(10px, 1.5vw, 14px) clamp(20px, 3vw, 32px);
+        font-size: clamp(0.92rem, 1.8vw, 1.05rem);
+    }
+
+    /* Note cards */
+    .note-card {
+        padding: clamp(20px, 3vw, 32px);
+    }
+
+    /* Divider */
+    .divider span {
+        font-size: clamp(1.3rem, 2.5vw, 1.7rem);
+    }
+
+    /* Daily card */
+    .daily-msg {
+        font-size: clamp(1rem, 2vw, 1.2rem);
+    }
+}
+
+/* ── Desktop (>1024px) ────────────────────────── */
+@media (min-width: 1024px) {
+    body {
+        padding: 40px 32px 90px;
+    }
+
+    .app {
+        width: min(100%, 720px);
+        max-width: 720px;
+        padding: 32px 36px calc(130px + env(safe-area-inset-bottom));
+    }
+
+    .bottom-nav {
+        width: min(100%, 720px);
+    }
+
+    /* 4-column preview grid on wide screens */
+    .home-preview-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    /* Bigger nav buttons */
+    .nav-btn {
+        height: 72px;
+        font-size: 1rem;
+    }
+
+    .nav-btn .nav-label {
+        font-size: 0.95rem;
+    }
+
+    /* Album grid: more comfortable spacing */
+    .album-grid {
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: 22px;
+    }
+}

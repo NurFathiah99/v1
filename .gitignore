@@ -3,3 +3,4 @@ config.js
 node_modules/
 .vercel/
 *.tmp.js
+docs/

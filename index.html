@@ -229,40 +229,7 @@
 
           <button id="adminLoginBtn" class="love-btn" style="margin-top: 10px;">Unlock Console</button>
           <p id="adminLoginError" style="color: var(--btn-shade); margin-top: 10px; font-family: 'Caveat', cursive; font-size: 1.15rem; display: none;"></p>
-          
-          <!-- Browser API Credentials Configuration -->
-          <details style="margin-top: 20px; font-size: 0.82rem; color: var(--text);">
-            <summary style="cursor: pointer; font-weight: bold; text-decoration: underline;">Configure API Keys locally</summary>
-            <div style="margin-top: 10px; padding: 12px; border: 1px dashed var(--border); border-radius: var(--radius-s); background: rgba(255,255,255,0.45);">
-              <p style="margin-bottom: 8px; line-height: 1.4;">Paste your credentials here to persist them in your browser's local storage (avoids hardcoding keys):</p>
-              
-              <div class="field" style="margin-bottom: 10px;">
-                <label style="font-size: 0.8rem; margin-bottom: 2px;">Firestore API Key</label>
-                <input id="localFbApiKey" type="text" style="font-size: 0.8rem; padding: 4px 2px;">
-              </div>
-              <div class="field" style="margin-bottom: 10px;">
-                <label style="font-size: 0.8rem; margin-bottom: 2px;">Firestore Project ID</label>
-                <input id="localFbProjId" type="text" style="font-size: 0.8rem; padding: 4px 2px;">
-              </div>
-              <div class="field" style="margin-bottom: 10px;">
-                <label style="font-size: 0.8rem; margin-bottom: 2px;">Firestore App ID</label>
-                <input id="localFbAppId" type="text" style="font-size: 0.8rem; padding: 4px 2px;">
-              </div>
-              <div class="field" style="margin-bottom: 10px;">
-                <label style="font-size: 0.8rem; margin-bottom: 2px;">Cloudinary Cloud Name</label>
-                <input id="localCloudName" type="text" style="font-size: 0.8rem; padding: 4px 2px;">
-              </div>
-              <div class="field" style="margin-bottom: 10px;">
-                <label style="font-size: 0.8rem; margin-bottom: 2px;">Cloudinary Preset (Unsigned)</label>
-                <input id="localUploadPreset" type="text" style="font-size: 0.8rem; padding: 4px 2px;">
-              </div>
-              
-              <div style="display: flex; gap: 8px; margin-top: 12px;">
-                <button id="saveLocalConfigBtn" class="chip-btn" style="font-size: 0.75rem; padding: 6px 10px;">Save Config</button>
-                <button id="clearLocalConfigBtn" class="chip-btn" style="font-size: 0.75rem; padding: 6px 10px; background: transparent; color: var(--btn-shade);">Clear</button>
-              </div>
-            </div>
-          </details>
+
         </div>
 
         <!-- Admin Control Console (visible only after successful login) -->
