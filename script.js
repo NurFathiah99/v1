@@ -249,23 +249,18 @@ function setAudioUI(on) {
 }
 
 async function tryPlayAudio() {
-  // 1. Try <audio> bgm.mp3 first
-  if (bgm && bgm.readyState >= 2) {
+  // Only play from the bgm <audio> element (fed by the playlist)
+  if (bgm) {
     bgm.volume = 0.55;
     try { await bgm.play(); return true; } catch(e) {}
-  }
-  // 2. Fallback: unmute the hero video (it has its own audio)
-  if (mainVidEl) {
-    mainVidEl.muted = false;
-    mainVidEl.volume = 0.7;
-    try { await mainVidEl.play(); return true; } catch(e) { mainVidEl.muted = true; }
   }
   return false;
 }
 
 function stopAudio() {
   if (bgm) { bgm.pause(); bgm.currentTime = 0; }
-  if (mainVidEl) { mainVidEl.muted = true; mainVidEl.play().catch(() => {}); }
+  // Keep video always muted — video is for visuals only
+  if (mainVidEl) { mainVidEl.muted = true; }
 }
 
 if (soundToggle) {
@@ -277,7 +272,7 @@ if (soundToggle) {
       else {
         // Still show feedback even if no audio file
         audioOn = true; setAudioUI(true);
-        if (audioHint) audioHint.textContent = 'No music file found 🥺 Add bgm.mp3!';
+        if (audioHint) audioHint.textContent = 'No songs yet 🥺 Add songs in Admin → Music!';
       }
     } else {
       stopAudio();
@@ -1010,9 +1005,10 @@ document.querySelectorAll('.admin-tab-btn').forEach(btn => {
 
     document.querySelectorAll('.admin-tab-content').forEach(sect => sect.style.display = 'none');
     const target = btn.dataset.target;
-    if (target === 'adminMsg') document.getElementById('adminMsgSection').style.display = 'block';
+    if (target === 'adminMsg')   document.getElementById('adminMsgSection').style.display = 'block';
     if (target === 'adminNotes') document.getElementById('adminNotesSection').style.display = 'block';
-    if (target === 'adminMems') document.getElementById('adminMemsSection').style.display = 'block';
+    if (target === 'adminMems')  document.getElementById('adminMemsSection').style.display = 'block';
+    if (target === 'adminMusic') document.getElementById('adminMusicSection').style.display = 'block';
     
     softBeep(580, 0.15, 0.03);
   });
@@ -1314,132 +1310,828 @@ if (addMemBtn) {
   });
 }
 
-// ── Cloudinary Direct Unsigned Upload (Drag & Drop / Select File) ──
-if (window.dropZone && window.fileInput) {
-  // Trigger file selection on click
-  dropZone.addEventListener('click', () => {
-    fileInput.click();
+/* ══════════════════════════════════════════════
+   UPLOAD HELPERS
+   ══════════════════════════════════════════════ */
+
+function formatFileSize(bytes) {
+  if (bytes < 1024)        return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// Returns a Promise<number|null> (duration in seconds, or null)
+function getMediaDuration(file) {
+  return new Promise(resolve => {
+    if (!file.type.startsWith('video/') && !file.type.startsWith('audio/')) { resolve(null); return; }
+    const url = URL.createObjectURL(file);
+    const el = file.type.startsWith('audio/') ? new Audio() : document.createElement('video');
+    el.preload = 'metadata';
+    el.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(Math.round(el.duration)); };
+    el.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+    el.src = url;
   });
+}
 
-  // Drag over states
-  dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('dragover');
-  });
+function fmtDuration(sec) {
+  if (!sec || isNaN(sec)) return null;
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
 
-  dropZone.addEventListener('dragenter', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('dragover');
-  });
+/* ══════════════════════════════════════════════
+   CLIENT-SIDE MP3 COMPRESSION (lamejs)
+   Uses Web Audio API to decode + lamejs to re-encode at 128 kbps.
+   Falls back to original file on any error.
+   ══════════════════════════════════════════════ */
 
-  dropZone.addEventListener('dragleave', () => {
-    dropZone.classList.remove('dragover');
-  });
+async function compressAudioFile(file, onStatus) {
+  const SKIP_BELOW_MB  = 2.5;   // skip if already ≤ 2.5 MB
+  const TARGET_KBPS    = 128;   // target bitrate
+  const MIN_SAVE_RATIO = 0.10;  // only use compressed if saves ≥ 10%
 
-  dropZone.addEventListener('dragend', () => {
-    dropZone.classList.remove('dragover');
-  });
+  const originalSize = file.size;
 
-  // Handle dropped files
-  dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('dragover');
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      uploadFile(e.dataTransfer.files[0]);
-    }
-  });
-
-  // Handle selected files
-  fileInput.addEventListener('change', () => {
-    if (fileInput.files && fileInput.files.length > 0) {
-      uploadFile(fileInput.files[0]);
-    }
-  });
-
-  function uploadFile(file) {
-    const cloudName = getConfig().cloudinary.cloudName;
-    const uploadPreset = getConfig().cloudinary.uploadPreset;
-
-    if (!cloudName || cloudName === "YOUR_CLOUD_NAME" || !uploadPreset || uploadPreset === "YOUR_UPLOAD_PRESET") {
-      showToast("Please configure your Cloudinary Cloud Name and Upload Preset in the local config block or in script.js first! 🥺", "error");
-      return;
-    }
-
-    // Set UI to uploading
-    dropZoneText.textContent = `Uploading ${file.name}...`;
-    uploadProgress.style.display = 'block';
-    uploadProgressBar.style.width = '0%';
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', uploadPreset);
-
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/upload`, true);
-
-    // Track upload progress
-    xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable) {
-        const percent = Math.round((e.loaded / e.total) * 100);
-        uploadProgressBar.style.width = `${percent}%`;
-        dropZoneText.textContent = `Uploading ${file.name} (${percent}%)`;
-      }
-    });
-
-    // Handle complete
-    xhr.addEventListener('load', () => {
-      if (xhr.status === 200) {
-        try {
-          const response = JSON.parse(xhr.responseText);
-          memUrlInput.value = response.secure_url;
-          
-          // Auto-select type
-          if (file.type.startsWith('video/')) {
-            memTypeSelect.value = 'video';
-          } else {
-            memTypeSelect.value = 'image';
-          }
-
-          dropZoneText.textContent = `Upload successful! 🎉`;
-          showToast('Yeay, cayang success upload', 'success');
-          softBeep(750, 0.22, 0.06);
-        } catch (err) {
-          dropZoneText.textContent = `Failed to parse upload response 🥺`;
-          showToast("Error parsing response: " + err.message, "error");
-        }
-      } else {
-        dropZoneText.textContent = `Upload failed (Status: ${xhr.status}) 🥺`;
-        try {
-          const response = JSON.parse(xhr.responseText);
-          showToast(`Cloudinary error: ${response.error?.message || 'Unknown error'}`, "error");
-        } catch (err) {
-          showToast(`Upload failed: Server returned status ${xhr.status}`, "error");
-        }
-      }
-      
-      // Clear progress bar
-      setTimeout(() => {
-        uploadProgress.style.display = 'none';
-        uploadProgressBar.style.width = '0%';
-        if (dropZoneText.textContent === `Upload successful! 🎉` || dropZoneText.textContent.includes('failed')) {
-          dropZoneText.textContent = `Drag & drop photo/video here, or click to browse`;
-        }
-      }, 2000);
-    });
-
-    // Handle error
-    xhr.addEventListener('error', () => {
-      dropZoneText.textContent = `Upload failed 🥺`;
-      showToast("An error occurred during file upload. Check your internet connection or console.", "error");
-      uploadProgress.style.display = 'none';
-    });
-
-    xhr.send(formData);
+  // Skip tiny files
+  if (originalSize <= SKIP_BELOW_MB * 1024 * 1024) {
+    return { file, originalSize, compressedSize: originalSize, skipped: true, reason: 'already_small' };
   }
+
+  // Need lamejs
+  if (typeof lamejs === 'undefined') {
+    return { file, originalSize, compressedSize: originalSize, skipped: true, reason: 'no_encoder' };
+  }
+
+  try {
+    onStatus && onStatus('Optimizing audio…');
+
+    // Decode MP3 → PCM via Web Audio API
+    const arrayBuffer = await file.arrayBuffer();
+    const tmpCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
+    const audioBuffer = await tmpCtx.decodeAudioData(arrayBuffer.slice(0));
+    await tmpCtx.close();
+
+    const channels   = Math.min(audioBuffer.numberOfChannels, 2);
+    const sampleRate = audioBuffer.sampleRate;
+    const kbps       = TARGET_KBPS;
+
+    const encoder   = new lamejs.Mp3Encoder(channels, sampleRate, kbps);
+    const mp3Chunks = [];
+    const BLOCK     = 1152; // lamejs required block size
+    const length    = audioBuffer.length;
+
+    // Float32 → Int16 converter
+    function f32ToI16(f32) {
+      const i16 = new Int16Array(f32.length);
+      for (let i = 0; i < f32.length; i++) {
+        const clamped = Math.max(-1, Math.min(1, f32[i]));
+        i16[i] = clamped < 0 ? clamped * 0x8000 : clamped * 0x7FFF;
+      }
+      return i16;
+    }
+
+    const left  = audioBuffer.getChannelData(0);
+    const right = channels > 1 ? audioBuffer.getChannelData(1) : left;
+
+    // Encode in blocks (yield to UI every ~100 blocks)
+    for (let i = 0; i < length; i += BLOCK) {
+      const lSlice = left.slice(i, Math.min(i + BLOCK, length));
+      const rSlice = right.slice(i, Math.min(i + BLOCK, length));
+      const lInt = f32ToI16(lSlice);
+      const rInt = f32ToI16(rSlice);
+
+      const buf = channels > 1
+        ? encoder.encodeBuffer(lInt, rInt)
+        : encoder.encodeBuffer(lInt);
+      if (buf.length > 0) mp3Chunks.push(buf);
+
+      // Yield to keep UI responsive
+      if (i % (BLOCK * 100) === 0 && i > 0) {
+        const pct = Math.round((i / length) * 100);
+        onStatus && onStatus(`Optimizing… ${pct}%`);
+        await new Promise(r => setTimeout(r, 0));
+      }
+    }
+
+    const tail = encoder.flush();
+    if (tail.length > 0) mp3Chunks.push(tail);
+
+    const blob          = new Blob(mp3Chunks, { type: 'audio/mpeg' });
+    const compressedSize = blob.size;
+
+    // Only use if meaningful saving
+    const saved = (originalSize - compressedSize) / originalSize;
+    if (saved < MIN_SAVE_RATIO) {
+      return { file, originalSize, compressedSize: originalSize, skipped: true, reason: 'no_saving' };
+    }
+
+    const optimizedFile = new File([blob], file.name, { type: 'audio/mpeg', lastModified: Date.now() });
+    return { file: optimizedFile, originalSize, compressedSize, skipped: false };
+
+  } catch (err) {
+    console.warn('[compress] failed, falling back to original:', err);
+    return { file, originalSize, compressedSize: originalSize, skipped: true, reason: 'error' };
+  }
+}
+
+// ── Core XHR upload to Cloudinary ──
+// opts: { file, endpoint, onProgress, onSuccess, onFail, onError }
+function buildUploadXHR({ file, endpoint, onProgress, onSuccess, onFail, onError }) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', getConfig().cloudinary.uploadPreset);
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', endpoint, true);
+  xhr.upload.addEventListener('progress', e => {
+    if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+  });
+  xhr.addEventListener('load', () => {
+    if (xhr.status === 200) {
+      try { onSuccess(JSON.parse(xhr.responseText)); }
+      catch(e) { onFail('Could not read upload response 🥺'); }
+    } else {
+      try {
+        const r = JSON.parse(xhr.responseText);
+        onFail(r.error?.message || 'Upload failed. Please try again.');
+      } catch(_) { onFail('Upload failed. Please try again.'); }
+    }
+  });
+  xhr.addEventListener('error', () => onError());
+  xhr.send(formData);
+  return xhr;
+}
+
+/* ══════════════════════════════════════════════
+   MEMORIES UPLOAD (3-STATE UX)
+   ══════════════════════════════════════════════ */
+
+const dropZone         = document.getElementById('dropZone');
+const fileInput        = document.getElementById('fileInput');
+const memUploadingState = document.getElementById('memUploadingState');
+const memUploadingFilename = document.getElementById('memUploadingFilename');
+const memUploadingPct  = document.getElementById('memUploadingPct');
+const memProgressBar   = document.getElementById('uploadProgressBar');
+const memPreviewCard   = document.getElementById('memPreviewCard');
+const memPreviewMedia  = document.getElementById('memPreviewMedia');
+const memPreviewFilename = document.getElementById('memPreviewFilename');
+const memPreviewMeta   = document.getElementById('memPreviewMeta');
+const memReplaceBtn    = document.getElementById('memReplaceBtn');
+const memErrorCard     = document.getElementById('memErrorCard');
+const memErrorMsg      = document.getElementById('memErrorMsg');
+const memRetryBtn      = document.getElementById('memRetryBtn');
+
+let _lastMemFile = null; // for retry
+
+function memShowState(state) {
+  // state: 'drop' | 'uploading' | 'preview' | 'error'
+  if (dropZone)          dropZone.style.display          = state === 'drop'      ? '' : 'none';
+  if (memUploadingState) memUploadingState.style.display = state === 'uploading' ? '' : 'none';
+  if (memPreviewCard)    memPreviewCard.style.display    = state === 'preview'   ? '' : 'none';
+  if (memErrorCard)      memErrorCard.style.display      = state === 'error'     ? '' : 'none';
+  // Disable/enable submit during upload
+  if (addMemBtn) addMemBtn.disabled = (state === 'uploading');
+}
+
+async function uploadMemFile(file) {
+  const cloudName    = getConfig().cloudinary.cloudName;
+  const uploadPreset = getConfig().cloudinary.uploadPreset;
+  if (!cloudName || !uploadPreset || cloudName === 'YOUR_CLOUD_NAME') {
+    showToast('Configure Cloudinary first in Admin → Config! 🥺', 'error'); return;
+  }
+  _lastMemFile = file;
+
+  // Show uploading state
+  memShowState('uploading');
+  if (memUploadingFilename) memUploadingFilename.textContent = file.name;
+  if (memUploadingPct)      memUploadingPct.textContent      = '0%';
+  if (memProgressBar)       memProgressBar.style.width       = '0%';
+
+  const isVideo = file.type.startsWith('video/');
+  const endpoint = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
+
+  buildUploadXHR({
+    file, endpoint,
+    onProgress: pct => {
+      if (memProgressBar)  memProgressBar.style.width = `${pct}%`;
+      if (memUploadingPct) memUploadingPct.textContent = `${pct}%`;
+    },
+    onSuccess: async (resp) => {
+      // Store URL silently
+      if (memUrlInput) memUrlInput.value = resp.secure_url;
+      // Auto-select type
+      if (memTypeSelect) memTypeSelect.value = isVideo ? 'video' : 'image';
+
+      // Build preview
+      if (memPreviewMedia) {
+        if (isVideo) {
+          const thumb = resp.eager?.[0]?.secure_url || null;
+          memPreviewMedia.innerHTML = thumb
+            ? `<div style="position:relative;display:inline-block"><img src="${thumb}" alt="thumb"><span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.6rem;">&#9654;</span></div>`
+            : `<div class="audio-icon-box">🎥</div>`;
+        } else {
+          const objUrl = URL.createObjectURL(file);
+          memPreviewMedia.innerHTML = `<img src="${objUrl}" alt="preview" onload="URL.revokeObjectURL(this.src)">`;
+        }
+      }
+      if (memPreviewFilename) memPreviewFilename.textContent = file.name;
+      const dur    = await getMediaDuration(file);
+      const durStr = dur ? ` · ${fmtDuration(dur)}` : '';
+      if (memPreviewMeta) memPreviewMeta.textContent = `${formatFileSize(file.size)}${durStr} · ${isVideo ? 'Video' : 'Image'}`;
+
+      memShowState('preview');
+      if (window.lucide) window.lucide.createIcons();
+      showToast('Yeay, uploaded! 🎉 Fill in the details and click Add Memory.', 'success');
+      softBeep(750, 0.22, 0.06);
+    },
+    onFail: (msg) => {
+      if (memErrorMsg) memErrorMsg.textContent = msg;
+      memShowState('error');
+    },
+    onError: () => {
+      if (memErrorMsg) memErrorMsg.textContent = 'Network error. Check your connection and try again.';
+      memShowState('error');
+    }
+  });
+}
+
+if (dropZone && fileInput) {
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragenter', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('dragend',   () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files?.[0]) uploadMemFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files?.[0]) uploadMemFile(fileInput.files[0]);
+    fileInput.value = ''; // allow re-selecting same file
+  });
+}
+
+if (memReplaceBtn) {
+  memReplaceBtn.addEventListener('click', () => {
+    if (memUrlInput) memUrlInput.value = '';
+    memShowState('drop');
+    fileInput && fileInput.click();
+  });
+}
+if (memRetryBtn) {
+  memRetryBtn.addEventListener('click', () => {
+    if (_lastMemFile) uploadMemFile(_lastMemFile);
+  });
+}
+
+// Reset upload zone when Cancel edit is clicked
+const _cancelMemEl = document.getElementById('cancelMemEditBtn');
+if (_cancelMemEl) {
+  _cancelMemEl.addEventListener('click', () => {
+    memShowState('drop');
+    if (memUrlInput) memUrlInput.value = '';
+    _lastMemFile = null;
+  });
 }
 
 // Initial DB call
 initDataLoad();
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   MUSIC PLAYER  \u2014  single-owner module
+   All playback state lives here. No dual-listener races.
+   \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */
+
+const MusicPlayer = (() => {
+  // \u2500 State
+  let _playlist       = [];   // [{id,title,artist,url}]
+  let _idx            = 0;    // current track index
+  let _isPlaying      = false;
+  let _snapshot       = null; // Firestore snapshot ref
+  let _editingSongId  = null;
+
+  // \u2500 DOM refs
+  const _bgm         = document.getElementById('bgm');
+  const _miniPlayer  = document.getElementById('miniPlayer');
+  const _titleEl     = document.getElementById('miniPlayerTitle');
+  const _barsEl      = document.getElementById('miniPlayerBars');
+  const _prevBtn     = document.getElementById('prevSongBtn');
+  const _playBtn     = document.getElementById('playPauseBtn');
+  const _nextBtn     = document.getElementById('nextSongBtn');
+  const _soundToggle = document.getElementById('soundToggle');
+  const _audioHint   = document.getElementById('audioHint');
+
+  // \u2500\u2500 Internal: load track src into bgm element
+  function _loadTrack(song) {
+    if (!_bgm || !song) return;
+    _bgm.pause();
+    while (_bgm.firstChild) _bgm.removeChild(_bgm.firstChild);
+    const s = document.createElement('source');
+    s.src  = song.url;
+    s.type = 'audio/mpeg';
+    _bgm.appendChild(s);
+    _bgm.load();
+    _bgm.volume = 0.55;
+  }
+
+  // \u2500\u2500 Internal: sync all UI to current state
+  function _syncUI() {
+    const hasPlaylist = _playlist.length > 0;
+    const song        = hasPlaylist ? _playlist[_idx] : null;
+    const label       = song
+      ? (song.artist ? `${song.title} \u2014 ${song.artist}` : song.title)
+      : 'No music available';
+
+    // Title + marquee (only scroll if text actually overflows)
+    if (_titleEl) {
+      _titleEl.textContent = label;
+      // Run marquee check after render
+      requestAnimationFrame(() => {
+        if (_titleEl.scrollWidth > _titleEl.clientWidth + 2) {
+          _titleEl.classList.add('scrolling');
+        } else {
+          _titleEl.classList.remove('scrolling');
+        }
+      });
+    }
+
+    // Equalizer bars animate only while playing
+    if (_miniPlayer) _miniPlayer.classList.toggle('playing', _isPlaying);
+
+    // Play/Pause icon
+    if (_playBtn) {
+      _playBtn.innerHTML = _isPlaying
+        ? '<i data-lucide="pause"></i>'
+        : '<i data-lucide="play"></i>';
+      _playBtn.disabled = !hasPlaylist;
+      _playBtn.title    = _isPlaying ? 'Pause' : 'Play';
+    }
+
+    // Prev/Next disabled when 0 or 1 song
+    const canSkip = hasPlaylist && _playlist.length > 1;
+    if (_prevBtn) _prevBtn.disabled = !canSkip;
+    if (_nextBtn) _nextBtn.disabled = !canSkip;
+
+    // Top-bar volume icon
+    if (_soundToggle) {
+      _soundToggle.innerHTML = _isPlaying
+        ? '<i data-lucide="volume-2"></i>'
+        : '<i data-lucide="volume-x"></i>';
+    }
+
+    // Hint text
+    if (_audioHint) {
+      _audioHint.innerHTML = _isPlaying
+        ? 'Music on <i data-lucide="music" style="width:14px;height:14px;"></i> Tap to mute'
+        : 'Tap <i data-lucide="volume-x" style="width:14px;height:14px;"></i> to start music';
+    }
+
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  // \u2500\u2500 Public: play current track
+  async function play() {
+    if (!_bgm || _playlist.length === 0) return;
+    if (audioCtx && audioCtx.state === 'suspended') await audioCtx.resume();
+    try {
+      await _bgm.play();
+      _isPlaying = true;
+      audioOn    = true;   // keep legacy flag in sync
+    } catch (e) {
+      console.warn('Playback blocked:', e);
+    }
+    _syncUI();
+  }
+
+  // \u2500\u2500 Public: pause
+  function pause() {
+    if (_bgm) _bgm.pause();
+    _isPlaying = false;
+    audioOn    = false;
+    _syncUI();
+  }
+
+  // \u2500\u2500 Public: toggle play/pause
+  async function togglePlayPause() {
+    if (_isPlaying) { pause(); } else { await play(); }
+  }
+
+  // \u2500\u2500 Public: jump to index (keepPlaying = continue if was playing)
+  async function goTo(idx, keepPlaying) {
+    if (_playlist.length === 0) return;
+    _idx = ((idx % _playlist.length) + _playlist.length) % _playlist.length;
+    _loadTrack(_playlist[_idx]);
+    _syncUI();
+
+    if (keepPlaying || _isPlaying) {
+      await play();
+      showToast(`\ud83c\udfb5 Now playing: ${_playlist[_idx].title}`, 'success');
+      softBeep(680, 0.18, 0.04);
+    }
+  }
+
+  // \u2500\u2500 Public: go to track by Firestore id and play
+  async function playById(id) {
+    const i = _playlist.findIndex(s => s.id === id);
+    if (i === -1) return;
+    await goTo(i, true);
+  }
+
+  // \u2500\u2500 Internal: when bgm track ends, auto-advance
+  if (_bgm) {
+    _bgm.addEventListener('ended', () => {
+      if (_playlist.length > 1 && _isPlaying) {
+        goTo(_idx + 1, true);
+      } else {
+        _isPlaying = false;
+        audioOn    = false;
+        _syncUI();
+      }
+    });
+  }
+
+  // \u2500\u2500 Public: update playlist from Firestore snapshot
+  function setPlaylist(songs, snapshot) {
+    const wasEmpty   = _playlist.length === 0;
+    const prevId     = _playlist[_idx]?.id;
+
+    _playlist  = songs;
+    _snapshot  = snapshot;
+
+    // Clamp index; try to keep same song
+    if (_playlist.length === 0) {
+      _idx = 0;
+      _syncUI();
+      return;
+    }
+
+    const sameIdx = _playlist.findIndex(s => s.id === prevId);
+    _idx = sameIdx >= 0 ? sameIdx : 0;
+
+    // Load track into bgm so it's ready for first click
+    if (wasEmpty || sameIdx === -1) {
+      _loadTrack(_playlist[_idx]);
+    }
+
+    // If was already playing, resume with correct src
+    if (_isPlaying) {
+      goTo(_idx, true);
+    }
+
+    _syncUI();
+  }
+
+  // \u2500\u2500 Wire up buttons
+  if (_playBtn) {
+    _playBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      togglePlayPause();
+    });
+  }
+  if (_prevBtn) {
+    _prevBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      goTo(_idx - 1, _isPlaying);
+    });
+  }
+  if (_nextBtn) {
+    _nextBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      goTo(_idx + 1, _isPlaying);
+    });
+  }
+
+  // \u2500\u2500 Volume (speaker) toggle \u2014 replaces the original handler entirely
+  //    We remove the old listener by cloning, then attach ours.
+  if (_soundToggle) {
+    const fresh = _soundToggle.cloneNode(true);
+    _soundToggle.parentNode.replaceChild(fresh, _soundToggle);
+    fresh.addEventListener('click', e => {
+      e.stopPropagation();
+      togglePlayPause();
+    });
+  }
+
+  // \u2500\u2500 Initial UI (no playlist yet)
+  _syncUI();
+
+  // \u2500\u2500 Expose public API
+  return { play, pause, togglePlayPause, goTo, playById, setPlaylist,
+    get idx()       { return _idx; },
+    get isPlaying() { return _isPlaying; },
+    get playlist()  { return _playlist; },
+    get snapshot()  { return _snapshot; },
+    setEditingSongId(id) { _editingSongId = id; },
+    getEditingSongId()   { return _editingSongId; }
+  };
+})();
+
+// State vars used by admin CRUD below
+let lastSongsSnapshot = null;
+let editingSongId     = null;
+
+// ── Firestore: load songs collection ──
+function loadSongsFromDB() {
+  if (!db) {
+    // No DB — mini player shows empty state (MusicPlayer already initialised with empty playlist)
+    return;
+  }
+  db.collection('songs').orderBy('createdAt', 'asc').onSnapshot(snapshot => {
+    lastSongsSnapshot = snapshot;
+    const songs = [];
+    snapshot.forEach(doc => {
+      const d = doc.data();
+      songs.push({ id: doc.id, title: d.title || 'Untitled', artist: d.artist || '', url: d.url || '' });
+    });
+
+    // Hand off to MusicPlayer — it handles source loading, UI sync, and playback continuation
+    MusicPlayer.setPlaylist(songs, snapshot);
+    renderAdminSongsList(snapshot);
+  }, err => {
+    console.warn('Firestore songs fetch failed:', err);
+    // MusicPlayer already shows 'No music available' by default
+  });
+}
+loadSongsFromDB();
+
+// ── Admin songs list renderer ──
+const adminSongsList = document.getElementById('adminSongsList');
+
+function renderAdminSongsList(snapshot) {
+  if (!adminSongsList) return;
+  adminSongsList.innerHTML = '';
+  if (!snapshot || snapshot.empty) {
+    adminSongsList.innerHTML = '<li style="font-family:\'Caveat\', cursive; color: #6b5347; font-size:0.95rem; padding: 8px 0;">No songs yet. Add one above! 🎵</li>';
+    return;
+  }
+  snapshot.forEach(doc => {
+    const d = doc.data();
+    const li = document.createElement('li');
+    li.className = 'admin-song-item';
+    li.innerHTML = `
+      <span class="admin-song-icon">🎵</span>
+      <div class="admin-song-info">
+        <span class="admin-song-title">${d.title || 'Untitled'}</span>
+        <span class="admin-song-artist">${d.artist || ''}</span>
+      </div>
+      <button class="admin-song-play" onclick="playSongById('${doc.id}')">▶ Play</button>
+      <div class="admin-item-actions">
+        <button onclick="startEditSong('${doc.id}')">Edit</button>
+        <button onclick="deleteSong('${doc.id}')">Delete</button>
+      </div>
+    `;
+    adminSongsList.appendChild(li);
+  });
+}
+
+// ── Play song by Firestore doc id (called from admin list) ──
+window.playSongById = function(id) {
+  MusicPlayer.playById(id);
+};
+
+// ── Delete song ──
+window.deleteSong = function(id) {
+  if (!db) return;
+  if (confirm('Delete this song from the playlist? 🥺')) {
+    db.collection('songs').doc(id).delete()
+      .then(() => { showToast('Song removed! 🌸', 'success'); softBeep(400, 0.25, 0.05); })
+      .catch(err => showToast('Error: ' + err.message, 'error'));
+  }
+};
+
+// ── Edit song ──
+const songTitleInput  = document.getElementById('songTitleInput');
+const songArtistInput = document.getElementById('songArtistInput');
+const songUrlInput    = document.getElementById('songUrlInput');
+const addSongBtn      = document.getElementById('addSongBtn');
+const cancelSongEditBtn = document.getElementById('cancelSongEditBtn');
+
+window.startEditSong = function(id) {
+  const snap = MusicPlayer.snapshot || lastSongsSnapshot;
+  if (!snap) return;
+  const doc = snap.docs.find(d => d.id === id);
+  if (!doc) return;
+  const data = doc.data();
+  if (songTitleInput)  songTitleInput.value  = data.title  || '';
+  if (songArtistInput) songArtistInput.value = data.artist || '';
+  if (songUrlInput)    songUrlInput.value    = data.url    || '';
+  editingSongId = id;
+  if (addSongBtn)       addSongBtn.textContent = 'Update Song';
+  if (cancelSongEditBtn) cancelSongEditBtn.style.display = 'block';
+  if (songTitleInput)  songTitleInput.focus();
+};
+
+if (cancelSongEditBtn) {
+  cancelSongEditBtn.addEventListener('click', () => {
+    if (songTitleInput)  songTitleInput.value  = '';
+    if (songArtistInput) songArtistInput.value = '';
+    if (songUrlInput)    songUrlInput.value    = '';
+    editingSongId = null;
+    if (addSongBtn)       addSongBtn.textContent = 'Add Song';
+    cancelSongEditBtn.style.display = 'none';
+  });
+}
+
+if (addSongBtn) {
+  addSongBtn.addEventListener('click', () => {
+    const title  = (songTitleInput  ? songTitleInput.value.trim()  : '');
+    const artist = (songArtistInput ? songArtistInput.value.trim() : '');
+    const url    = (songUrlInput    ? songUrlInput.value.trim()    : '');
+    if (!title) { showToast('Please enter a song title! 🎵', 'error'); return; }
+    if (!url)   { showToast('Please upload or paste a URL! 🎵', 'error'); return; }
+    if (!db)    { showToast('Database offline. Configure Firestore! 🥺', 'error'); return; }
+
+    if (editingSongId) {
+      db.collection('songs').doc(editingSongId).update({ title, artist, url })
+        .then(() => {
+          if (songTitleInput)  songTitleInput.value  = '';
+          if (songArtistInput) songArtistInput.value = '';
+          if (songUrlInput)    songUrlInput.value    = '';
+          editingSongId = null;
+          if (addSongBtn)       addSongBtn.textContent = 'Add Song';
+          if (cancelSongEditBtn) cancelSongEditBtn.style.display = 'none';
+          showToast('Song updated! 🌸', 'success');
+          softBeep(650, 0.18, 0.04);
+        }).catch(err => showToast('Error: ' + err.message, 'error'));
+    } else {
+      db.collection('songs').add({
+        title, artist, url,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        if (songTitleInput)  songTitleInput.value  = '';
+        if (songArtistInput) songArtistInput.value = '';
+        if (songUrlInput)    songUrlInput.value    = '';
+        showToast('Song added to playlist! 🎵', 'success');
+        softBeep(750, 0.22, 0.06);
+      }).catch(err => showToast('Error: ' + err.message, 'error'));
+    }
+  });
+}
+
+/* ══════════════════════════════════════════════
+   MUSIC UPLOAD (3-STATE UX)
+   ══════════════════════════════════════════════ */
+
+const musicDropZone         = document.getElementById('musicDropZone');
+const musicFileInput        = document.getElementById('musicFileInput');
+const musicUploadingState   = document.getElementById('musicUploadingState');
+const musicUploadingFilename= document.getElementById('musicUploadingFilename');
+const musicUploadingPct     = document.getElementById('musicUploadingPct');
+const musicProgressBar      = document.getElementById('musicUploadProgressBar');
+const musicPreviewCard      = document.getElementById('musicPreviewCard');
+const musicPreviewMedia     = document.getElementById('musicPreviewMedia');
+const musicPreviewFilename  = document.getElementById('musicPreviewFilename');
+const musicPreviewMeta      = document.getElementById('musicPreviewMeta');
+const musicReplaceBtn       = document.getElementById('musicReplaceBtn');
+const musicErrorCard        = document.getElementById('musicErrorCard');
+const musicErrorMsg         = document.getElementById('musicErrorMsg');
+const musicRetryBtn         = document.getElementById('musicRetryBtn');
+
+let _lastMusicFile = null;
+let _lastMusicObjectUrl = null;
+
+function musicShowState(state) {
+  if (musicDropZone)       musicDropZone.style.display       = state === 'drop'      ? '' : 'none';
+  if (musicUploadingState) musicUploadingState.style.display = state === 'uploading' ? '' : 'none';
+  if (musicPreviewCard)    musicPreviewCard.style.display    = state === 'preview'   ? '' : 'none';
+  if (musicErrorCard)      musicErrorCard.style.display      = state === 'error'     ? '' : 'none';
+  if (addSongBtn) addSongBtn.disabled = (state === 'uploading');
+}
+
+async function uploadMusicFile(file) {
+  const cloudName    = getConfig().cloudinary.cloudName;
+  const uploadPreset = getConfig().cloudinary.uploadPreset;
+  if (!cloudName || !uploadPreset || cloudName === 'YOUR_CLOUD_NAME') {
+    showToast('Configure Cloudinary first in Admin → Config! 🥺', 'error'); return;
+  }
+  _lastMusicFile = file;
+
+  // ── Phase 1: Show uploading state (compression will happen here) ──
+  musicShowState('uploading');
+  if (musicUploadingFilename) musicUploadingFilename.textContent = file.name;
+  if (musicUploadingPct)      musicUploadingPct.textContent      = '⏳ Optimizing…';
+  if (musicProgressBar)       musicProgressBar.style.width       = '0%';
+
+  // ── Phase 2: Client-side MP3 compression ──
+  const compResult = await compressAudioFile(file, (status) => {
+    if (musicUploadingPct) musicUploadingPct.textContent = status;
+  });
+
+  const uploadFile    = compResult.file;        // possibly compressed
+  const originalSize  = compResult.originalSize;
+  const finalSize     = compResult.compressedSize;
+  const wasCompressed = !compResult.skipped;
+
+  // Update status to uploading
+  if (musicUploadingPct) musicUploadingPct.textContent = '0%';
+  if (musicUploadingFilename) musicUploadingFilename.textContent =
+    wasCompressed ? `${file.name} (optimized)` : file.name;
+
+  // ── Phase 3: Upload to Cloudinary ──
+  const cloudN   = getConfig().cloudinary.cloudName;
+  const endpoint = `https://api.cloudinary.com/v1_1/${cloudN}/video/upload`;
+
+  buildUploadXHR({
+    file: uploadFile, endpoint,
+    onProgress: pct => {
+      if (musicProgressBar)  musicProgressBar.style.width  = `${pct}%`;
+      if (musicUploadingPct) musicUploadingPct.textContent = `Uploading ${pct}%`;
+    },
+    onSuccess: async (resp) => {
+      // Store URL silently
+      if (songUrlInput) songUrlInput.value = resp.secure_url;
+      // Auto-fill title if empty
+      if (songTitleInput && !songTitleInput.value) {
+        songTitleInput.value = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
+      }
+
+      // Audio preview: use original file for local playback quality
+      if (_lastMusicObjectUrl) URL.revokeObjectURL(_lastMusicObjectUrl);
+      _lastMusicObjectUrl = URL.createObjectURL(file); // always preview original
+      if (musicPreviewMedia) {
+        musicPreviewMedia.innerHTML = `
+          <div class="audio-icon-box">🎵</div>
+          <audio controls src="${_lastMusicObjectUrl}" style="width:100%;margin-top:6px;accent-color:var(--btn);"></audio>
+        `;
+      }
+
+      if (musicPreviewFilename) musicPreviewFilename.textContent = file.name;
+
+      const dur    = await getMediaDuration(file);
+      const durStr = dur ? ` · ${fmtDuration(dur)}` : '';
+
+      // Build meta: size info + optimization note
+      let metaText = `${formatFileSize(finalSize)}${durStr} · Audio`;
+      let optimNote = '';
+      if (wasCompressed) {
+        metaText  = `${formatFileSize(originalSize)} → ${formatFileSize(finalSize)}${durStr} · Audio`;
+        optimNote = `<div class="upload-optim-note">✓ Optimized for faster playback &amp; lower data usage</div>`;
+      } else if (compResult.reason === 'already_small') {
+        optimNote = `<div class="upload-optim-note">✓ Already optimized — no compression needed</div>`;
+      }
+
+      if (musicPreviewMeta) musicPreviewMeta.innerHTML = `<span>${metaText}</span>${optimNote}`;
+
+      musicShowState('preview');
+      if (window.lucide) window.lucide.createIcons();
+      showToast(
+        wasCompressed
+          ? `🎵 Uploaded! Saved ${formatFileSize(originalSize - finalSize)} via optimization.`
+          : 'MP3 uploaded! 🎵 Enter a title and click Add Song.',
+        'success'
+      );
+      softBeep(750, 0.22, 0.06);
+    },
+    onFail: (msg) => {
+      if (musicErrorMsg) musicErrorMsg.textContent = msg;
+      musicShowState('error');
+    },
+    onError: () => {
+      if (musicErrorMsg) musicErrorMsg.textContent = 'Network error. Check your connection and try again.';
+      musicShowState('error');
+    }
+  });
+}
+
+if (musicDropZone && musicFileInput) {
+  musicDropZone.addEventListener('click', () => musicFileInput.click());
+  musicDropZone.addEventListener('dragover',  e => { e.preventDefault(); musicDropZone.classList.add('dragover'); });
+  musicDropZone.addEventListener('dragenter', e => { e.preventDefault(); musicDropZone.classList.add('dragover'); });
+  musicDropZone.addEventListener('dragleave', () => musicDropZone.classList.remove('dragover'));
+  musicDropZone.addEventListener('dragend',   () => musicDropZone.classList.remove('dragover'));
+  musicDropZone.addEventListener('drop', e => {
+    e.preventDefault(); musicDropZone.classList.remove('dragover');
+    if (e.dataTransfer.files?.[0]) uploadMusicFile(e.dataTransfer.files[0]);
+  });
+  musicFileInput.addEventListener('change', () => {
+    if (musicFileInput.files?.[0]) uploadMusicFile(musicFileInput.files[0]);
+    musicFileInput.value = '';
+  });
+}
+
+if (musicReplaceBtn) {
+  musicReplaceBtn.addEventListener('click', () => {
+    if (songUrlInput) songUrlInput.value = '';
+    if (_lastMusicObjectUrl) { URL.revokeObjectURL(_lastMusicObjectUrl); _lastMusicObjectUrl = null; }
+    musicShowState('drop');
+    musicFileInput && musicFileInput.click();
+  });
+}
+if (musicRetryBtn) {
+  musicRetryBtn.addEventListener('click', () => {
+    if (_lastMusicFile) uploadMusicFile(_lastMusicFile);
+  });
+}
+
+// Reset upload when Cancel edit clicked
+if (cancelSongEditBtn) {
+  cancelSongEditBtn.addEventListener('click', () => {
+    musicShowState('drop');
+    if (songUrlInput) songUrlInput.value = '';
+    if (_lastMusicObjectUrl) { URL.revokeObjectURL(_lastMusicObjectUrl); _lastMusicObjectUrl = null; }
+    _lastMusicFile = null;
+  }, true); // capture=true so it fires alongside the existing listener
+}
+
 
 // Initial Lucide icons parse
 if (window.lucide) {

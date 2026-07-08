@@ -15,6 +15,8 @@
     href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Caveat:wght@500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <!-- lamejs: lightweight client-side MP3 encoder for upload optimization -->
+  <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js" defer></script>
 </head>
 
 <body>
@@ -62,6 +64,22 @@
           <span class="brand-icon"><i data-lucide="sparkles"></i></span>
           <span class="brand-name">CutiePie</span>
         </div>
+
+        <!-- ── Mini Music Player ── -->
+        <div class="mini-player" id="miniPlayer">
+          <div class="mini-player-bars" id="miniPlayerBars" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <div class="mini-player-info">
+            <span class="mini-player-title" id="miniPlayerTitle">No song</span>
+          </div>
+          <div class="mini-player-controls">
+            <button class="mini-ctrl-btn" id="prevSongBtn" aria-label="Previous song" title="Previous"><i data-lucide="skip-back"></i></button>
+            <button class="mini-ctrl-btn mini-ctrl-play" id="playPauseBtn" aria-label="Play / Pause" title="Play / Pause"><i data-lucide="play"></i></button>
+            <button class="mini-ctrl-btn" id="nextSongBtn" aria-label="Next song" title="Next"><i data-lucide="skip-forward"></i></button>
+          </div>
+        </div>
+
         <button id="soundToggle" class="icon-btn" aria-label="Toggle sound" title="Toggle sound"><i data-lucide="volume-x"></i></button>
       </div>
     </header>
@@ -243,10 +261,11 @@
           </div>
 
           <!-- Section Tabs -->
-          <div style="display: flex; gap: 6px; margin-bottom: 20px;">
+          <div style="display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap;">
             <button class="admin-tab-btn active" data-target="adminMsg"><i data-lucide="message-square"></i> Messages</button>
             <button class="admin-tab-btn" data-target="adminNotes"><i data-lucide="mail"></i> Notes</button>
             <button class="admin-tab-btn" data-target="adminMems"><i data-lucide="images"></i> Memories</button>
+            <button class="admin-tab-btn" data-target="adminMusic"><i data-lucide="music"></i> Music</button>
           </div>
 
           <!-- TAB 1: DAILY MESSAGES -->
@@ -323,16 +342,47 @@
             </div>
             <div class="field">
               <label>Media File</label>
+
+              <!-- State 1: Drop zone -->
               <div id="dropZone" class="upload-zone">
                 <span class="upload-zone-icon"><i data-lucide="image"></i></span>
-                <span id="dropZoneText" class="upload-zone-text">Drag & drop photo/video here, or click to browse</span>
-                <span class="upload-zone-sub">Uploads directly to Cloudinary</span>
-                <div id="uploadProgress" class="upload-progress">
-                  <div id="uploadProgressBar" class="upload-progress-bar"></div>
+                <span id="dropZoneText" class="upload-zone-text">Drag &amp; drop photo/video here, or click to browse</span>
+                <span class="upload-zone-sub">JPG, PNG, MP4 &middot; Uploads to Cloudinary</span>
+              </div>
+
+              <!-- State 2: Uploading -->
+              <div id="memUploadingState" class="upload-uploading-state" style="display:none;">
+                <div class="uploading-spinner"></div>
+                <div class="uploading-info">
+                  <span id="memUploadingFilename" class="uploading-filename"></span>
+                  <div class="upload-progress">
+                    <div id="uploadProgressBar" class="upload-progress-bar"></div>
+                  </div>
+                  <span id="memUploadingPct" class="uploading-pct">0%</span>
                 </div>
               </div>
-              <input type="file" id="fileInput" accept="image/*,video/*" style="display: none;">
-              <input id="memUrlInput" type="text" placeholder="Or paste direct image/video URL..." style="margin-top: 8px;">
+
+              <!-- State 3: Preview card -->
+              <div id="memPreviewCard" class="upload-preview-card" style="display:none;">
+                <div id="memPreviewMedia" class="upload-preview-media"></div>
+                <div class="upload-preview-info">
+                  <div class="upload-preview-success"><i data-lucide="check-circle"></i> Upload Successful!</div>
+                  <div id="memPreviewFilename" class="upload-preview-filename"></div>
+                  <div id="memPreviewMeta" class="upload-preview-meta"></div>
+                  <button class="upload-replace-btn" id="memReplaceBtn">↺ Replace File</button>
+                </div>
+              </div>
+
+              <!-- Error state -->
+              <div id="memErrorCard" class="upload-error-card" style="display:none;">
+                <i data-lucide="alert-circle" class="upload-error-icon"></i>
+                <div id="memErrorMsg" class="upload-error-msg"></div>
+                <button class="upload-retry-btn" id="memRetryBtn">↺ Try Again</button>
+              </div>
+
+              <!-- Hidden inputs (internal state only) -->
+              <input type="file" id="fileInput" accept="image/*,video/*" style="display:none;">
+              <input id="memUrlInput" type="hidden">
             </div>
             <div style="display: flex; gap: 8px; margin-bottom: 20px;">
               <button id="addMemBtn" class="love-btn" style="flex: 1; margin: 0;">Add Memory</button>
@@ -341,6 +391,79 @@
             <div style="margin-top: 20px; border-top: 1px dashed var(--border); padding-top: 15px;">
               <h4 style="font-size: 0.85rem; font-weight: bold; margin-bottom: 10px; color: var(--text);">Uploaded Memories</h4>
               <ul id="adminMemsList" class="admin-list">
+                <!-- Dynamically populated -->
+              </ul>
+            </div>
+          </div>
+
+          <!-- TAB 4: MUSIC -->
+          <div id="adminMusicSection" class="admin-tab-content" style="display: none;">
+            <h3 class="section-title">🎵 Manage Music Playlist</h3>
+            <p class="section-sub" style="margin-bottom: 16px;">Add songs for the background music player. Uploads go to Cloudinary.</p>
+
+            <div class="field">
+              <label for="songTitleInput">Song Title</label>
+              <input id="songTitleInput" type="text" placeholder="e.g. Our Song 🎵">
+            </div>
+
+            <div class="field">
+              <label for="songArtistInput">Artist <span style="opacity:.6;font-size:.8em">(optional)</span></label>
+              <input id="songArtistInput" type="text" placeholder="e.g. Taylor Swift">
+            </div>
+
+            <div class="field">
+              <label>MP3 File</label>
+
+              <!-- State 1: Drop zone -->
+              <div id="musicDropZone" class="upload-zone">
+                <span class="upload-zone-icon"><i data-lucide="music"></i></span>
+                <span id="musicDropZoneText" class="upload-zone-text">Drag &amp; drop MP3 here, or click to browse</span>
+                <span class="upload-zone-sub">MP3, WAV, OGG &middot; Uploads to Cloudinary</span>
+              </div>
+
+              <!-- State 2: Uploading -->
+              <div id="musicUploadingState" class="upload-uploading-state" style="display:none;">
+                <div class="uploading-spinner"></div>
+                <div class="uploading-info">
+                  <span id="musicUploadingFilename" class="uploading-filename"></span>
+                  <div class="upload-progress">
+                    <div id="musicUploadProgressBar" class="upload-progress-bar"></div>
+                  </div>
+                  <span id="musicUploadingPct" class="uploading-pct">0%</span>
+                </div>
+              </div>
+
+              <!-- State 3: Preview card -->
+              <div id="musicPreviewCard" class="upload-preview-card" style="display:none;">
+                <div id="musicPreviewMedia" class="upload-preview-media"></div>
+                <div class="upload-preview-info">
+                  <div class="upload-preview-success"><i data-lucide="check-circle"></i> Upload Successful!</div>
+                  <div id="musicPreviewFilename" class="upload-preview-filename"></div>
+                  <div id="musicPreviewMeta" class="upload-preview-meta"></div>
+                  <button class="upload-replace-btn" id="musicReplaceBtn">↺ Replace File</button>
+                </div>
+              </div>
+
+              <!-- Error state -->
+              <div id="musicErrorCard" class="upload-error-card" style="display:none;">
+                <i data-lucide="alert-circle" class="upload-error-icon"></i>
+                <div id="musicErrorMsg" class="upload-error-msg"></div>
+                <button class="upload-retry-btn" id="musicRetryBtn">↺ Try Again</button>
+              </div>
+
+              <!-- Hidden inputs -->
+              <input type="file" id="musicFileInput" accept="audio/*,.mp3,.wav,.ogg" style="display:none;">
+              <input id="songUrlInput" type="hidden">
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+              <button id="addSongBtn" class="love-btn" style="flex: 1; margin: 0;">Add Song</button>
+              <button id="cancelSongEditBtn" class="love-btn" style="flex: 1; margin: 0; display: none; background: transparent; border: 2px solid var(--border); color: var(--text);">Cancel</button>
+            </div>
+
+            <div style="margin-top: 20px; border-top: 1px dashed var(--border); padding-top: 15px;">
+              <h4 style="font-size: 0.85rem; font-weight: bold; margin-bottom: 10px; color: var(--text);">Current Playlist 🎶</h4>
+              <ul id="adminSongsList" class="admin-list">
                 <!-- Dynamically populated -->
               </ul>
             </div>
