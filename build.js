@@ -44,7 +44,35 @@ window.ENV_CONFIG = {
     uploadPreset: "${uploadPreset}"
   }
 };
+
+export const FIREBASE_CONFIG = window.ENV_CONFIG.firebase;
+export const CLOUDINARY_CONFIG = window.ENV_CONFIG.cloudinary;
+export const isMobile = typeof navigator !== 'undefined' ? (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768) : false;
+export const isLowEnd = typeof navigator !== 'undefined' && navigator.deviceMemory ? navigator.deviceMemory <= 2 : false;
+export const prefersReducedMotion = typeof window !== 'undefined' ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
+
+export function getConfig() {
+  const localFbApiKey = typeof localStorage !== 'undefined' ? localStorage.getItem('fb_apiKey') : null;
+  const localFbProjId = typeof localStorage !== 'undefined' ? localStorage.getItem('fb_projectId') : null;
+  const localFbAppId = typeof localStorage !== 'undefined' ? localStorage.getItem('fb_appId') : null;
+  const localCloudName = typeof localStorage !== 'undefined' ? localStorage.getItem('cl_cloudName') : null;
+  const localUploadPreset = typeof localStorage !== 'undefined' ? localStorage.getItem('cl_uploadPreset') : null;
+
+  return {
+    firebase: {
+      apiKey: localFbApiKey || FIREBASE_CONFIG.apiKey,
+      projectId: localFbProjId || FIREBASE_CONFIG.projectId,
+      appId: localFbAppId || FIREBASE_CONFIG.appId,
+      authDomain: (localFbProjId || FIREBASE_CONFIG.projectId) ? \`\${localFbProjId || FIREBASE_CONFIG.projectId}.firebaseapp.com\` : ""
+    },
+    cloudinary: {
+      cloudName: localCloudName || CLOUDINARY_CONFIG.cloudName,
+      uploadPreset: localUploadPreset || CLOUDINARY_CONFIG.uploadPreset
+    }
+  };
+}
 `;
 
 fs.writeFileSync(path.join(__dirname, 'config.js'), configContent, 'utf-8');
 console.log('config.js successfully generated!');
+

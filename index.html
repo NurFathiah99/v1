@@ -217,6 +217,130 @@
 
       </section>
 
+      <!-- ════ PAGE: MUSIC ════ -->
+      <section class="page" id="pageMusic" data-page="music">
+
+        <div class="page-header fade-reveal">
+          <h1 class="page-title">Our Music Corner <i data-lucide="music"></i></h1>
+          <p class="page-sub">A cozy space to play our favorite tunes, Cyg 🌸</p>
+        </div>
+
+        <div class="music-layout">
+          <!-- Playlist Panel -->
+          <div class="music-playlist-panel section-card">
+            <div class="playlist-header">
+              <h2 class="playlist-title">Our Songs (<span id="totalSongsCount">0</span>)</h2>
+              <div class="playlist-search-wrap">
+                <i data-lucide="search" class="search-icon"></i>
+                <input type="text" id="playlistSearch" placeholder="Search song title..." class="cute-search-input">
+              </div>
+            </div>
+
+            <!-- Drag & Drop Upload Zone -->
+            <div class="music-page-upload">
+              <div id="musicPageDropZone" class="upload-zone mini-upload-zone">
+                <span class="upload-zone-icon"><i data-lucide="upload-cloud"></i></span>
+                <span id="musicPageDropZoneText" class="upload-zone-text">Drag &amp; drop songs, or click here to upload</span>
+                <span class="upload-zone-sub">MP3, WAV, OGG &middot; Multiple supported</span>
+              </div>
+              <input type="file" id="musicPageFileInput" accept="audio/*,.mp3,.wav,.ogg" multiple style="display:none;">
+
+              <!-- Upload progress state -->
+              <div id="musicPageUploadingQueue" class="upload-uploading-state" style="display:none;">
+                <div class="uploading-spinner"></div>
+                <div class="uploading-info">
+                  <span id="musicPageUploadQueueText" class="uploading-filename">Uploading...</span>
+                  <div class="upload-progress">
+                    <div id="musicPageUploadProgressBar" class="upload-progress-bar"></div>
+                  </div>
+                  <span id="musicPageUploadPctText" class="uploading-pct">0%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Search Song (Deezer) -->
+            <div id="deezerSearchSection" class="music-deezer-search" style="margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px; margin-bottom: 15px;">
+              <h3 style="font-family: 'Caveat', cursive; font-size: 1.35rem; font-weight: bold; margin-bottom: 8px; color: var(--text); display: flex; align-items: center; gap: 6px;">🔍 Search Song (Deezer)</h3>
+              <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                <input type="text" id="deezerSearchInput" placeholder="Search any song or artist..." class="cute-search-input" style="flex: 1; padding: 8px 12px; height: 38px; font-size: 0.85rem;">
+                <button id="deezerSearchBtn" class="love-btn" style="margin: 0; padding: 0 16px; height: 38px; font-size: 0.9rem;">Search</button>
+              </div>
+              
+              <!-- Search Results List Container -->
+              <div id="deezerResultsContainer" style="display: none; max-height: 220px; overflow-y: auto; border: 1px dashed var(--border); border-radius: var(--radius-s); background: var(--bg); padding: 8px; margin-top: 10px; box-sizing: border-box;">
+                <ul id="deezerResultsList" class="playlist-songs-list" style="margin: 0; padding: 0;">
+                  <!-- Dynamic search results populated from JS -->
+                </ul>
+              </div>
+            </div>
+
+            <!-- Songs List container -->
+            <div class="playlist-songs-container">
+              <ul id="playlistSongsList" class="playlist-songs-list">
+                <!-- Populated dynamically -->
+              </ul>
+              <div id="playlistEmptyState" class="playlist-empty-state">
+                No music uploaded yet 🎵
+              </div>
+            </div>
+          </div>
+
+          <!-- Player Controls Panel -->
+          <div class="music-player-panel section-card">
+            <!-- Visual Album Art Placeholder -->
+            <div class="album-art-container">
+              <div class="album-vinyl" id="playerVinyl">
+                <div class="vinyl-grooves"></div>
+                <div class="vinyl-label-center">
+                  <span class="vinyl-heart">🌸</span>
+                </div>
+              </div>
+              <div class="album-cassette" id="playerCassette">
+                <div class="cassette-decor">
+                  <span class="decor-tape"></span>
+                </div>
+                <div class="cassette-wheels-container">
+                  <span class="cassette-wheel left-wheel">⚙️</span>
+                  <span class="cassette-wheel right-wheel">⚙️</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="player-song-details">
+              <h2 id="playerSongTitle" class="player-song-title">No song playing</h2>
+              <p id="playerSongArtist" class="player-song-artist">Add music in Admin or upload above!</p>
+            </div>
+
+            <!-- Seekable Progress Bar and Times -->
+            <div class="player-progress-section">
+              <div class="player-time-indicators">
+                <span id="playerCurrentTime">0:00</span>
+                <span id="playerTotalDuration">0:00</span>
+              </div>
+              <div class="progress-slider-container">
+                <input type="range" id="playerProgressSlider" min="0" max="100" value="0" class="player-progress-slider" aria-label="Seek progress">
+              </div>
+            </div>
+
+            <!-- Controls Row -->
+            <div class="player-controls-container">
+              <button id="playerShuffleBtn" class="player-mode-btn" aria-label="Shuffle playlist" title="Shuffle"><i data-lucide="shuffle"></i></button>
+              <button id="playerPrevBtn" class="player-nav-btn" aria-label="Previous song" title="Previous"><i data-lucide="skip-back"></i></button>
+              <button id="playerPlayPauseBtn" class="player-play-btn" aria-label="Play or pause" title="Play / Pause"><i data-lucide="play"></i></button>
+              <button id="playerNextBtn" class="player-nav-btn" aria-label="Next song" title="Next"><i data-lucide="skip-forward"></i></button>
+              <button id="playerRepeatBtn" class="player-mode-btn" aria-label="Repeat playlist" title="Repeat"><i data-lucide="repeat"></i></button>
+            </div>
+
+            <!-- Volume Control -->
+            <div class="player-volume-container">
+              <button id="playerMuteBtn" class="player-vol-icon-btn" aria-label="Mute sound" title="Mute/Unmute"><i data-lucide="volume-2"></i></button>
+              <input type="range" id="playerVolumeSlider" min="0" max="100" value="55" class="player-volume-slider" aria-label="Volume">
+            </div>
+          </div>
+        </div>
+
+      </section>
+
       <!-- ════ PAGE: ADMIN ════ -->
       <section class="page" id="pageAdmin" data-page="admin">
 
@@ -489,6 +613,10 @@
         <span class="nav-icon"><i data-lucide="mail"></i></span>
         <span class="nav-label">Notes</span>
       </button>
+      <button class="nav-btn" data-page="music" aria-label="Music">
+        <span class="nav-icon"><i data-lucide="music"></i></span>
+        <span class="nav-label">Music</span>
+      </button>
       <button class="nav-btn" data-page="admin" aria-label="Admin">
         <span class="nav-icon"><i data-lucide="settings"></i></span>
         <span class="nav-label">Our HQ</span>
@@ -522,8 +650,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.min.js"></script>
-  <script src="config.js"></script>
-  <script src="script.js"></script>
+  <script type="module" src="./main.js"></script>
 </body>
 
 </html>
